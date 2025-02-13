@@ -1,0 +1,102 @@
+import Character from "./character";
+
+export default class Cursor {
+    private ctx: CanvasRenderingContext2D;
+
+    private targetX: number | undefined;
+    private targetY: number | undefined;
+
+    private currentX: number | undefined; // for smooth movement)
+    private currentY: number | undefined; // for smooth movement
+
+    private color: string;
+    private fontSize: number;
+
+    private isVisible: boolean = true;
+    private flickerInterval: number = 500;
+    private lastUpdate: number = 0;
+
+    private smoothness: number = 0.3; // Smoothness factor for interpolation (0 = instant, 1 = very slow)
+
+    constructor(
+        ctx: CanvasRenderingContext2D,
+        x: number | undefined,
+        y: number | undefined,
+        color: string,
+        fontSize: number
+    ) {
+        this.ctx = ctx;
+        this.targetX = x;
+        this.targetY = y;
+        this.currentX = x;
+        this.currentY = y;
+        this.color = color;
+        this.fontSize = fontSize;
+
+        this.startFlicker();
+    }
+
+    draw() {
+        if (
+            this.currentX === undefined ||
+            this.currentY === undefined ||
+            !this.isVisible
+        ) {
+            return;
+        }
+
+        const baselineOffset = this.fontSize * 0.8;
+        const cursorY = this.currentY - baselineOffset;
+
+        this.ctx.fillStyle = this.color;
+        this.ctx.fillRect(this.currentX, cursorY, 2, this.fontSize);
+    }
+
+    update() {
+        const now = Date.now();
+
+        // Update flickering
+        if (now - this.lastUpdate >= this.flickerInterval) {
+            this.isVisible = !this.isVisible;
+            this.lastUpdate = now;
+        }
+
+        // Smoothly interpolate the cursor's position
+        if (this.targetX !== undefined && this.targetY !== undefined) {
+            if (this.currentX === undefined || this.currentY === undefined) {
+                this.currentX = this.targetX;
+                this.currentY = this.targetY;
+            } else {
+                this.currentX +=
+                    (this.targetX - this.currentX) * this.smoothness;
+                this.currentY +=
+                    (this.targetY - this.currentY) * this.smoothness;
+            }
+        }
+    }
+
+    move(curChar: Character) {
+        this.targetX = curChar.x + curChar.width + 1;
+        this.targetY = curChar.y;
+
+        this.isVisible = true;
+        this.lastUpdate = Date.now();
+    }
+
+    disappear() {
+        this.targetX = undefined;
+        this.targetY = undefined;
+        this.currentX = undefined;
+        this.currentY = undefined;
+        this.isVisible = false;
+    }
+
+    private startFlicker() {
+        const flicker = () => {
+            this.update();
+            requestAnimationFrame(flicker);
+        };
+
+        requestAnimationFrame(flicker);
+    }
+}
