@@ -103,3 +103,11 @@ export default class Cursor {
         requestAnimationFrame(flicker);
     }
 }
+
+export const defaultCursor = (
+    canvasManager: CanvasManager,
+    fontSize: number,
+    color: string = "rgb(177, 177, 177)"
+) => {
+    return new Cursor(canvasManager, undefined, undefined, color, fontSize);
+};

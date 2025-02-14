@@ -3,33 +3,41 @@ import Character from "./character";
 import Cursor from "./cursor";
 import GameState from "./game-state";
 import { calculateWPM, calculateElapsedTime } from "./utils";
+import { ICompetitorManager } from "./competitor-manager.interface";
 
 export default class TypeRacer {
     private canvasManager: CanvasManager;
     private gameState: GameState;
     private characters: Character[];
     private curCharIdx: number;
-    private cursor: Cursor;
+    private myCursor: Cursor;
 
     private correctWordsCnt: number = 0;
     private startTime: number;
     private wpm: number;
 
+    private lastUpdateTimestamp: number = performance.now();
+    private competitorManager: ICompetitorManager;
+
     constructor(
         canvasManager: CanvasManager,
         gameState: GameState,
         characters: Character[],
-        cursor: Cursor
+        myCursor: Cursor,
+        competitorManager: ICompetitorManager
     ) {
         this.canvasManager = canvasManager;
         this.gameState = gameState;
         this.characters = characters;
         this.curCharIdx = 0;
-        this.cursor = cursor;
-        cursor.disappear();
+        this.myCursor = myCursor;
+        myCursor.disappear();
 
         this.startTime = Date.now();
         this.wpm = 0;
+
+        this.competitorManager = competitorManager;
+        this.competitorManager.initialize(characters);
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
         document.addEventListener("keydown", this.handleKeyDown);
@@ -57,16 +65,16 @@ export default class TypeRacer {
             this.curCharIdx--;
             this.characters[this.curCharIdx].currentState = "neutral";
             if (this.curCharIdx === 0) {
-                this.cursor.disappear();
+                this.myCursor.disappear();
             } else {
-                this.cursor.move(this.characters[this.curCharIdx - 1]);
+                this.myCursor.move(this.characters[this.curCharIdx - 1]);
             }
         } else {
             const isCorrect = typedChar === curChar.char;
             this.correctWordsCnt += isCorrect ? 1 : 0;
             curChar.currentState = isCorrect ? "correct" : "incorrect";
             this.curCharIdx++;
-            this.cursor.move(curChar);
+            this.myCursor.move(curChar);
 
             if (this.curCharIdx === this.characters.length) {
                 this.end();
@@ -81,7 +89,8 @@ export default class TypeRacer {
         this.characters.forEach((char) => {
             char.draw();
         });
-        this.cursor.draw();
+        this.myCursor.draw();
+        this.competitorManager.draw();
 
         this.wpm = !this.gameState.isOver
             ? calculateWPM(
@@ -93,7 +102,21 @@ export default class TypeRacer {
         ctx.fillText(`WPM: ${this.wpm}`, 40, 50, 100);
     }
 
-    update() {}
+    addCompetitor() {
+        this.competitorManager.addCompetitor();
+    }
+
+    update() {
+        if (this.gameState.isOver) {
+            return;
+        }
+
+        const now = performance.now();
+        const deltaTime = now - this.lastUpdateTimestamp;
+        this.lastUpdateTimestamp = now;
+
+        this.competitorManager.update(deltaTime);
+    }
 
     private end() {
         this.gameState.isOver = true;
