@@ -1,19 +1,15 @@
 import Character from "./character";
-import Cursor, { defaultCursor } from "./cursor";
-import { ICompetitorManager } from "./competitor-manager.interface";
+import { defaultCursor } from "./cursor";
+import ICompetitorManager from "./competitor-manager.interface";
 import CanvasManager from "./canvas-manager";
 import { CURSOR_COLORS, FONT_SIZE } from "./constants";
+import MockCompetitor from "./mock-competitor";
+import ICompetitor from "./competitor.interface";
 
 export class MockCompetitorManager implements ICompetitorManager {
     private canvasManager: CanvasManager;
-    private competitors: {
-        cursor: Cursor;
-        currentIndex: number;
-        delay: number;
-        interval: number;
-    }[] = [];
+    private competitors: ICompetitor[] = [];
     private characters!: Character[];
-    private finished = false;
 
     constructor(canvasManager: CanvasManager) {
         this.canvasManager = canvasManager;
@@ -37,44 +33,29 @@ export class MockCompetitorManager implements ICompetitorManager {
         const startDelay = Math.random() * 3000;
         const charInterval = Math.random() * 250 + 50;
 
-        this.competitors.push({
-            cursor: newCursor,
-            currentIndex: 0,
-            delay: startDelay,
-            interval: charInterval,
-        });
+        const competitor = new MockCompetitor(
+            newCursor,
+            this.characters,
+            0,
+            startDelay,
+            charInterval
+        );
+        this.competitors.push(competitor);
     }
 
     anyFinished() {
-        return this.finished;
+        return this.competitors.some((competitor) => competitor.isFinished);
     }
 
     update(deltaTime: number) {
         this.competitors.forEach((competitor) => {
-            if (this.finished) return true;
-
-            if (competitor.delay > 0) {
-                competitor.delay -= deltaTime;
-                return;
-            }
-
-            if (competitor.currentIndex >= this.characters.length) {
-                this.finished = true;
-                return;
-            }
-
-            // Move cursor periodically based on typing speed
-            if (performance.now() % competitor.interval < deltaTime) {
-                const char = this.characters[competitor.currentIndex];
-                competitor.cursor.move(char);
-                competitor.currentIndex++;
-            }
+            competitor.update(deltaTime);
         });
     }
 
     draw() {
         this.competitors.forEach((competitor) => {
-            competitor.cursor.draw();
+            competitor.draw();
         });
     }
 

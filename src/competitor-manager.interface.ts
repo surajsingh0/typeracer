@@ -1,6 +1,6 @@
 import Character from "./character";
 
-export interface ICompetitorManager {
+export default interface ICompetitorManager {
     initialize(characters: Character[]): void;
     addCompetitor(): void;
     draw(): void;
