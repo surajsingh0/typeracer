@@ -1,7 +1,8 @@
+import CanvasManager from "./canvas-manager";
 import Character from "./character";
 
 export default class Cursor {
-    private ctx: CanvasRenderingContext2D;
+    private canvasManager: CanvasManager;
 
     private targetX: number | undefined;
     private targetY: number | undefined;
@@ -19,13 +20,13 @@ export default class Cursor {
     private smoothness: number = 0.3; // Smoothness factor for interpolation (0 = instant, 1 = very slow)
 
     constructor(
-        ctx: CanvasRenderingContext2D,
+        canvasManager: CanvasManager,
         x: number | undefined,
         y: number | undefined,
         color: string,
         fontSize: number
     ) {
-        this.ctx = ctx;
+        this.canvasManager = canvasManager;
         this.targetX = x;
         this.targetY = y;
         this.currentX = x;
@@ -37,6 +38,8 @@ export default class Cursor {
     }
 
     draw() {
+        const { ctx } = this.canvasManager;
+
         if (
             this.currentX === undefined ||
             this.currentY === undefined ||
@@ -48,8 +51,8 @@ export default class Cursor {
         const baselineOffset = this.fontSize * 0.8;
         const cursorY = this.currentY - baselineOffset;
 
-        this.ctx.fillStyle = this.color;
-        this.ctx.fillRect(this.currentX, cursorY, 2, this.fontSize);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.currentX, cursorY, 2, this.fontSize);
     }
 
     update() {

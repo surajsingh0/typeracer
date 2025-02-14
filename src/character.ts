@@ -1,3 +1,5 @@
+import CanvasManager from "./canvas-manager";
+
 export default class Character {
     private ctx: CanvasRenderingContext2D;
     char: string;
@@ -37,7 +39,7 @@ export default class Character {
 }
 
 export const createCharactersFromText = (
-    ctx: CanvasRenderingContext2D,
+    canvasManager: CanvasManager,
     text: string,
     fontSize: number,
     fontFamily: string,
@@ -47,6 +49,8 @@ export const createCharactersFromText = (
     charSpacing: number = 2.5,
     lineHeight: number = fontSize * 1.2
 ): Character[] => {
+    const { ctx } = canvasManager;
+
     ctx.font = `${fontSize}px ${fontFamily}`;
 
     const characters: Character[] = [];
