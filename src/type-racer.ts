@@ -3,7 +3,7 @@ import Character from "./character";
 import Cursor from "./cursor";
 import GameState from "./game-state";
 import { calculateWPM, calculateElapsedTime } from "./utils";
-import { ICompetitorManager } from "./competitor-manager.interface";
+import ICompetitorManager from "./competitor-manager.interface";
 
 export default class TypeRacer {
     private canvasManager: CanvasManager;
@@ -37,7 +37,7 @@ export default class TypeRacer {
         this.wpm = 0;
 
         this.competitorManager = competitorManager;
-        this.competitorManager.initialize(characters);
+        this.competitorManager.initialize(gameState, characters);
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
         document.addEventListener("keydown", this.handleKeyDown);

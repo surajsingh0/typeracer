@@ -27,8 +27,9 @@ export default class App {
             new MockCompetitorManager(this.canvasManager)
         );
 
-        this.typeRacer.addCompetitor(); // mock
-        this.typeRacer.addCompetitor(); // mock
+        for (let i = 0; i < 10; i++) {
+            this.typeRacer.addCompetitor(); // mock
+        }
     }
 
     private createCharacters() {

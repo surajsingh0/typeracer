@@ -1,7 +1,8 @@
 import Character from "./character";
+import GameState from "./game-state";
 
 export default interface ICompetitorManager {
-    initialize(characters: Character[]): void;
+    initialize(gameState: GameState, characters: Character[]): void;
     addCompetitor(): void;
     draw(): void;
     update(deltaTime: number): void;

@@ -5,9 +5,11 @@ import CanvasManager from "./canvas-manager";
 import { CURSOR_COLORS, FONT_SIZE } from "./constants";
 import MockCompetitor from "./mock-competitor";
 import ICompetitor from "./competitor.interface";
+import GameState from "./game-state";
 
 export class MockCompetitorManager implements ICompetitorManager {
     private canvasManager: CanvasManager;
+    private gameState!: GameState;
     private competitors: ICompetitor[] = [];
     private characters!: Character[];
 
@@ -15,7 +17,8 @@ export class MockCompetitorManager implements ICompetitorManager {
         this.canvasManager = canvasManager;
     }
 
-    initialize(characters: Character[]) {
+    initialize(gameState: GameState, characters: Character[]) {
+        this.gameState = gameState;
         this.characters = characters;
     }
 
@@ -34,6 +37,8 @@ export class MockCompetitorManager implements ICompetitorManager {
         const charInterval = Math.random() * 250 + 50;
 
         const competitor = new MockCompetitor(
+            this.competitors.length,
+            this.gameState,
             newCursor,
             this.characters,
             0,
@@ -44,7 +49,7 @@ export class MockCompetitorManager implements ICompetitorManager {
     }
 
     anyFinished() {
-        return this.competitors.some((competitor) => competitor.isFinished);
+        return this.competitors.some((competitor) => competitor.isFinished());
     }
 
     update(deltaTime: number) {

@@ -1,7 +1,11 @@
 import Character from "./character";
 import Cursor from "./cursor";
+import GameState from "./game-state";
+import { calculateElapsedTime, calculateWPM } from "./utils";
 
 export default class MockCompetitor {
+    private id: number;
+    private gameState: GameState;
     private cursor: Cursor;
     private currentIndex: number;
     private delay: number;
@@ -9,18 +13,31 @@ export default class MockCompetitor {
     private finished: boolean = false;
     private characters: Character[];
 
+    private startTime: number = 0;
+    private wpm: number = 0;
+
     constructor(
+        id: number,
+        gameState: GameState,
         cursor: Cursor,
         characters: Character[],
         currentIndex: number,
         delay: number,
         interval: number
     ) {
+        this.id = id;
+        this.gameState = gameState;
         this.cursor = cursor;
         this.characters = characters;
         this.currentIndex = currentIndex;
         this.delay = delay;
         this.interval = interval;
+
+        this.startTime = Date.now();
+        this.gameState.competitorMetric = {
+            id: this.id,
+            wpm: 0,
+        };
     }
 
     isFinished() {
@@ -49,6 +66,12 @@ export default class MockCompetitor {
             const char = this.characters[this.currentIndex];
             this.cursor.move(char);
             this.currentIndex++;
+
+            this.wpm = calculateWPM(
+                this.currentIndex,
+                calculateElapsedTime(this.startTime)
+            );
+            this.gameState.updateWpm(this.id, this.wpm);
         }
     }
 }
