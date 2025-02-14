@@ -107,7 +107,9 @@ export default class TypeRacer {
     }
 
     update() {
-        if (this.gameState.isOver) {
+        if (this.gameState.isOver) return;
+        if (this.competitorManager.anyFinished()) {
+            this.end();
             return;
         }
 

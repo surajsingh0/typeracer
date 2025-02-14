@@ -13,6 +13,7 @@ export class MockCompetitorManager implements ICompetitorManager {
         interval: number;
     }[] = [];
     private characters!: Character[];
+    private finished = false;
 
     constructor(canvasManager: CanvasManager) {
         this.canvasManager = canvasManager;
@@ -44,14 +45,23 @@ export class MockCompetitorManager implements ICompetitorManager {
         });
     }
 
+    anyFinished() {
+        return this.finished;
+    }
+
     update(deltaTime: number) {
         this.competitors.forEach((competitor) => {
+            if (this.finished) return true;
+
             if (competitor.delay > 0) {
                 competitor.delay -= deltaTime;
                 return;
             }
 
-            if (competitor.currentIndex >= this.characters.length) return;
+            if (competitor.currentIndex >= this.characters.length) {
+                this.finished = true;
+                return;
+            }
 
             // Move cursor periodically based on typing speed
             if (performance.now() % competitor.interval < deltaTime) {

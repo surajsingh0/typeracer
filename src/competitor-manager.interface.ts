@@ -6,4 +6,5 @@ export interface ICompetitorManager {
     draw(): void;
     update(deltaTime: number): void;
     cleanup(): void;
+    anyFinished(): boolean;
 }
