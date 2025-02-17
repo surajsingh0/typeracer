@@ -7,9 +7,20 @@ export default class GameState {
     isOver = false;
     private typeRacerMetrics: TypeRacerMetrics | undefined;
     private competitorsMetrics: TypeRacerMetrics[] = [];
+    private roomID: string;
+    private isHoveringButton = false;
+    private buttonPosition: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    } | null = null;
 
-    constructor(canvasManager: CanvasManager) {
+    constructor(canvasManager: CanvasManager, roomID: string) {
         this.canvasManager = canvasManager;
+        this.roomID = roomID;
+
+        this.setupCanvasInteractions();
     }
 
     set metrics(typeRacerMetrics: TypeRacerMetrics) {
@@ -34,12 +45,104 @@ export default class GameState {
 
     draw() {
         this.drawCompetitors();
+        this.drawInviteElements();
 
         if (!this.isOver || this.typeRacerMetrics === undefined) {
             return;
         }
 
         this.drawFinished();
+    }
+
+    private setupCanvasInteractions() {
+        const canvas = this.canvasManager.canvas;
+
+        // Mouse move handler for hover effect
+        canvas.addEventListener("mousemove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (this.buttonPosition) {
+                this.isHoveringButton =
+                    x >= this.buttonPosition.x &&
+                    x <= this.buttonPosition.x + this.buttonPosition.width &&
+                    y >= this.buttonPosition.y &&
+                    y <= this.buttonPosition.y + this.buttonPosition.height;
+            }
+        });
+
+        // Mouse out handler to clear hover state
+        canvas.addEventListener("mouseout", () => {
+            this.isHoveringButton = false;
+        });
+
+        // Click handler for copy functionality
+        canvas.addEventListener("click", (e) => {
+            if (this.isHoveringButton && this.buttonPosition) {
+                const inviteUrl = `${window.location.origin}?room=${this.roomID}`;
+                navigator.clipboard.writeText(inviteUrl);
+                alert("Invite link copied to clipboard!");
+            }
+        });
+    }
+
+    private drawInviteElements() {
+        const { ctx, cssWidth, cssHeight } = this.canvasManager;
+        const padding = 20;
+        const buttonWidth = 80;
+        const buttonHeight = 30;
+        const cornerRadius = 5;
+        const textRightMargin = 15;
+
+        ctx.save();
+
+        // Calculate positions
+        const buttonX = cssWidth - padding - buttonWidth;
+        const buttonY = cssHeight - padding - buttonHeight;
+
+        // Store button position for interaction detection
+        this.buttonPosition = {
+            x: buttonX,
+            y: buttonY,
+            width: buttonWidth,
+            height: buttonHeight,
+        };
+
+        // Draw room ID
+        ctx.fillStyle = "white";
+        ctx.font = "14px system-ui";
+        ctx.textBaseline = "middle";
+        const roomIDText = `Room: ${this.roomID}`;
+        const textMetrics = ctx.measureText(roomIDText);
+        const textX = buttonX - textMetrics.width - textRightMargin;
+        const textY = buttonY + buttonHeight / 2;
+
+        ctx.fillText(roomIDText, textX, textY);
+
+        // Draw button with hover effect
+        ctx.fillStyle = this.isHoveringButton ? "#0056b3" : "#007bff";
+        ctx.beginPath();
+        ctx.roundRect(
+            buttonX,
+            buttonY,
+            buttonWidth,
+            buttonHeight,
+            cornerRadius
+        );
+        ctx.fill();
+
+        // Draw button text
+        ctx.fillStyle = "white";
+        ctx.font = "14px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText(
+            "Invite",
+            buttonX + buttonWidth / 2,
+            buttonY + buttonHeight / 2 + 2 // Visual centering adjustment
+        );
+
+        ctx.restore();
     }
 
     private drawCompetitors() {

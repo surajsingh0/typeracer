@@ -16,14 +16,19 @@ export default class App {
     private wsClient: WSClient;
 
     constructor(canvasElement: HTMLCanvasElement) {
+        const params = new URLSearchParams(window.location.search);
+        const roomID =
+            params.get("room") ||
+            "room_" + Math.random().toString(36).slice(2, 11);
+
         this.canvasManager = new CanvasManager(canvasElement);
-        this.gameState = new GameState(this.canvasManager);
+        this.gameState = new GameState(this.canvasManager, roomID);
         this.wsClient = new WSClient({
-            url: "ws://localhost:8080/ws?room=room123",
+            url: `ws://localhost:8080/ws?room=${encodeURIComponent(roomID)}`,
         });
         this.wsClient.connect();
 
-        const playerID = "player_" + Math.random().toString(36).substr(2, 9);
+        const playerID = "player_" + Math.random().toString(36).slice(2, 11);
 
         this.wsClient.on("open", () => {
             console.log("Connected to server");
@@ -102,5 +107,6 @@ export default class App {
 
     destroy() {
         this.stop();
+        this.wsClient.disconnect();
     }
 }
