@@ -3,18 +3,33 @@ import { defaultCursor } from "./cursor";
 import ICompetitorManager from "./competitor-manager.interface";
 import CanvasManager from "./canvas-manager";
 import { CURSOR_COLORS, FONT_SIZE } from "./constants";
-import MockCompetitor from "./mock-competitor";
 import ICompetitor from "./competitor.interface";
 import GameState from "./game-state";
+import Competitor from "./competitor";
+import { WSClient } from "./ws-client";
+import { ServerMessage } from "./message";
 
-export class MockCompetitorManager implements ICompetitorManager {
+export class CompetitorManager implements ICompetitorManager {
     private canvasManager: CanvasManager;
     private gameState!: GameState;
     private competitors: ICompetitor[] = [];
     private characters!: Character[];
+    private wsClient: WSClient;
 
-    constructor(canvasManager: CanvasManager) {
+    constructor(canvasManager: CanvasManager, wsClient: WSClient) {
         this.canvasManager = canvasManager;
+        this.wsClient = wsClient;
+
+        this.wsClient.on("message", (message: ServerMessage) => {
+            switch (message.type) {
+                case "join":
+                    this.addCompetitor(message.id, null);
+                    break;
+                case "leave":
+                    this.removeCompetitor(message.id);
+                    break;
+            }
+        });
     }
 
     initialize(gameState: GameState, characters: Character[]) {
@@ -33,20 +48,39 @@ export class MockCompetitorManager implements ICompetitorManager {
             CURSOR_COLORS[this.competitors.length].hex
         );
 
-        const startDelay = Math.random() * 3000;
-        const charInterval = Math.random() * 250 + 50;
-
-        const competitor = new MockCompetitor(
+        const competitor = new Competitor(
+            this.wsClient,
             playerID ?? "",
             this.competitors.length,
             this.gameState,
             newCursor,
             this.characters,
-            currentIdx ?? 0,
-            startDelay,
-            charInterval
+            currentIdx ?? 0
         );
         this.competitors.push(competitor);
+    }
+
+    private removeCompetitor(playerID: string) {
+        if (!playerID) {
+            console.warn("Attempted to remove competitor with empty ID");
+            return;
+        }
+
+        const index = this.competitors.findIndex(
+            (competitor) => competitor.getPlayerID() === playerID
+        );
+
+        if (index !== -1) {
+            console.log(`Removing competitor with ID: ${playerID}`);
+            this.gameState.removeCompetitorMetric(
+                this.competitors[index].getID()
+            );
+            this.competitors.splice(index, 1);
+        } else {
+            console.warn(
+                `Couldn't find competitor with ID: ${playerID} to remove`
+            );
+        }
     }
 
     anyFinished() {

@@ -14,6 +14,7 @@ export class WSClient {
     private isExplicitClose = false;
     private heartbeatTimer?: number;
     private eventListeners = new Map<string, Set<Function>>();
+    private pingInterval: number | null = null;
 
     constructor(private config: WebSocketConfig) {
         this.config = {
@@ -31,6 +32,7 @@ export class WSClient {
         this.isExplicitClose = false;
         this.ws = new WebSocket(this.config.url);
         this.setupEventListeners();
+        this.setupPingInterval();
     }
 
     public disconnect(): void {
@@ -103,6 +105,20 @@ export class WSClient {
             this.emit("error", error);
             this.ws?.close();
         };
+    }
+
+    private setupPingInterval() {
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+        }
+
+        this.pingInterval = window.setInterval(() => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: "ping" }));
+            } else {
+                this.reconnect();
+            }
+        }, 30000);
     }
 
     private emit(event: string, ...args: any[]): void {

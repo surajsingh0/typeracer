@@ -4,6 +4,7 @@ import Cursor from "./cursor";
 import GameState from "./game-state";
 import { calculateWPM, calculateElapsedTime } from "./utils";
 import ICompetitorManager from "./competitor-manager.interface";
+import { WSClient } from "./ws-client";
 
 export default class TypeRacer {
     private canvasManager: CanvasManager;
@@ -19,12 +20,17 @@ export default class TypeRacer {
     private lastUpdateTimestamp: number = performance.now();
     private competitorManager: ICompetitorManager;
 
+    private playerID;
+    private wsClient: WSClient;
+
     constructor(
         canvasManager: CanvasManager,
         gameState: GameState,
         characters: Character[],
         myCursor: Cursor,
-        competitorManager: ICompetitorManager
+        competitorManager: ICompetitorManager,
+        playerID: string,
+        wsClient: WSClient
     ) {
         this.canvasManager = canvasManager;
         this.gameState = gameState;
@@ -38,6 +44,9 @@ export default class TypeRacer {
 
         this.competitorManager = competitorManager;
         this.competitorManager.initialize(gameState, characters);
+
+        this.playerID = playerID;
+        this.wsClient = wsClient;
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
         document.addEventListener("keydown", this.handleKeyDown);
@@ -78,9 +87,13 @@ export default class TypeRacer {
 
             if (this.curCharIdx === this.characters.length) {
                 this.end();
-                return;
             }
         }
+
+        this.wsClient.send({
+            id: this.playerID,
+            currentIdx: this.curCharIdx,
+        });
     }
 
     draw() {
@@ -102,8 +115,8 @@ export default class TypeRacer {
         ctx.fillText(`WPM: ${this.wpm}`, 40, 50, 100);
     }
 
-    addCompetitor() {
-        this.competitorManager.addCompetitor();
+    addCompetitor(playerID: string | null, currentIdx: number | null) {
+        this.competitorManager.addCompetitor(playerID, currentIdx);
     }
 
     update() {

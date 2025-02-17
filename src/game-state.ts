@@ -20,6 +20,14 @@ export default class GameState {
         this.competitorsMetrics.push(metrics);
     }
 
+    removeCompetitorMetric(id: number) {
+        const index = this.competitorsMetrics.findIndex(
+            (competitorMetric) => competitorMetric.id === id
+        );
+
+        this.competitorsMetrics.splice(index, 1);
+    }
+
     updateWpm(id: number, wpm: number) {
         this.competitorsMetrics[id].wpm = wpm;
     }

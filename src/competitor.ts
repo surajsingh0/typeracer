@@ -1,47 +1,56 @@
 import Character from "./character";
-import ICompetitor from "./competitor.interface";
 import Cursor from "./cursor";
 import GameState from "./game-state";
 import { calculateElapsedTime, calculateWPM } from "./utils";
+import { WSClient } from "./ws-client";
+import { ServerMessage } from "./message";
+import ICompetitor from "./competitor.interface";
 
-export default class MockCompetitor implements ICompetitor {
+export default class Competitor implements ICompetitor {
     private playerID: string;
     private id: number;
     private gameState: GameState;
     private cursor: Cursor;
     private currentIndex: number;
-    private delay: number;
-    private interval: number;
     private finished: boolean = false;
     private characters: Character[];
+    private wsClient: WSClient;
 
     private startTime: number = 0;
     private wpm: number = 0;
 
     constructor(
+        wsClient: WSClient,
         playerID: string,
         id: number,
         gameState: GameState,
         cursor: Cursor,
         characters: Character[],
-        currentIndex: number,
-        delay: number,
-        interval: number
+        currentIndex: number
     ) {
+        this.wsClient = wsClient;
         this.playerID = playerID;
         this.id = id;
         this.gameState = gameState;
         this.cursor = cursor;
         this.characters = characters;
         this.currentIndex = currentIndex;
-        this.delay = delay;
-        this.interval = interval;
-
         this.startTime = Date.now();
+
         this.gameState.competitorMetric = {
-            id: this.id,
+            id: id,
             wpm: 0,
         };
+
+        this.wsClient.on("message", (message: ServerMessage) => {
+            switch (message.type) {
+                case "update":
+                    if (message.id === this.playerID) {
+                        this.currentIndex = message.currentIdx;
+                    }
+                    break;
+            }
+        });
     }
 
     getID() {
@@ -71,27 +80,20 @@ export default class MockCompetitor implements ICompetitor {
     update(deltaTime: number) {
         if (this.finished) return;
 
-        if (this.delay > 0) {
-            this.delay -= deltaTime;
-            return;
-        }
-
         if (this.currentIndex >= this.characters.length) {
             this.finished = true;
             return;
         }
 
-        // Move cursor periodically based on typing speed
-        if (performance.now() % this.interval < deltaTime) {
-            const char = this.characters[this.currentIndex];
+        if (this.currentIndex > 0) {
+            const char = this.characters[this.currentIndex - 1];
             this.cursor.move(char);
-            this.currentIndex++;
-
-            this.wpm = calculateWPM(
-                this.currentIndex,
-                calculateElapsedTime(this.startTime)
-            );
-            this.gameState.updateWpm(this.id, this.wpm);
         }
+
+        this.wpm = calculateWPM(
+            this.currentIndex,
+            calculateElapsedTime(this.startTime)
+        );
+        this.gameState.updateWpm(this.id, this.wpm);
     }
 }

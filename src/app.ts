@@ -4,17 +4,34 @@ import { defaultCursor } from "./cursor";
 import GameState from "./game-state";
 import CanvasManager from "./canvas-manager";
 import { FONT_FAMILY, FONT_SIZE, PADDING, TEXT } from "./constants";
-import { MockCompetitorManager } from "./mock-competitor-manager";
+import { WSClient } from "./ws-client";
+import { CompetitorManager } from "./competitor-manager";
+import { ServerMessage } from "./message";
 
 export default class App {
     private canvasManager: CanvasManager;
     private gameState: GameState;
     private typeRacer: TypeRacer;
     private animationFrameId?: number;
+    private wsClient: WSClient;
 
     constructor(canvasElement: HTMLCanvasElement) {
         this.canvasManager = new CanvasManager(canvasElement);
         this.gameState = new GameState(this.canvasManager);
+        this.wsClient = new WSClient({
+            url: "ws://localhost:8080/ws?room=room123",
+        });
+        this.wsClient.connect();
+
+        const playerID = "player_" + Math.random().toString(36).substr(2, 9);
+
+        this.wsClient.on("open", () => {
+            console.log("Connected to server");
+            this.wsClient.send({
+                id: playerID,
+                currentIdx: 0,
+            });
+        });
 
         const characters = this.createCharacters();
         const cursor = this.createCursor();
@@ -24,12 +41,22 @@ export default class App {
             this.gameState,
             characters,
             cursor,
-            new MockCompetitorManager(this.canvasManager)
+            new CompetitorManager(this.canvasManager, this.wsClient),
+            playerID,
+            this.wsClient
         );
 
-        for (let i = 0; i < 10; i++) {
-            this.typeRacer.addCompetitor(); // mock
-        }
+        this.wsClient.on("message", (message: ServerMessage) => {
+            switch (message.type) {
+                case "state":
+                    message.players.forEach((player) => {
+                        this.typeRacer.addCompetitor(
+                            player.id,
+                            player.currentIdx
+                        );
+                    });
+            }
+        });
     }
 
     private createCharacters() {
