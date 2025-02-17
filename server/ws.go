@@ -103,8 +103,9 @@ type Client struct {
 }
 
 type Player struct {
-	id         string
-	CurrentIdx int
+	id             string
+	CurrentIdx     int
+	CorrectChrsCnt int
 }
 
 // Hub maintains the set of active clients
@@ -225,7 +226,11 @@ func (c *Client) sendCurrentState() {
 	players := make([]map[string]interface{}, 0, len(c.hub.clientsByID))
 	for id, client := range c.hub.clientsByID {
 		if id != c.id {
-			players = append(players, map[string]interface{}{"id": id, "currentIdx": client.CurrentIdx})
+			players = append(players, map[string]interface{}{
+				"id":             id,
+				"currentIdx":     client.CurrentIdx,
+				"correctChrsCnt": client.CorrectChrsCnt,
+			})
 		}
 	}
 	c.hub.mu.RUnlock()
@@ -244,9 +249,10 @@ func (c *Client) sendCurrentState() {
 
 func (c *Client) broadcastJoin() {
 	msg, _ := json.Marshal(map[string]interface{}{
-		"type":       "join",
-		"id":         c.id,
-		"currentIdx": c.CurrentIdx,
+		"type":           "join",
+		"id":             c.id,
+		"currentIdx":     c.CurrentIdx,
+		"correctChrsCnt": c.CorrectChrsCnt,
 	})
 
 	select {
@@ -258,9 +264,10 @@ func (c *Client) broadcastJoin() {
 
 func (c *Client) broadcastUpdate() {
 	msg, _ := json.Marshal(map[string]interface{}{
-		"type":       "update",
-		"id":         c.id,
-		"currentIdx": c.CurrentIdx,
+		"type":           "update",
+		"id":             c.id,
+		"currentIdx":     c.CurrentIdx,
+		"correctChrsCnt": c.CorrectChrsCnt,
 	})
 
 	select {
@@ -305,8 +312,9 @@ func (c *Client) readPump() {
 	}
 
 	var initMsg struct {
-		ID         string `json:"id"`
-		CurrentIdx int    `json:"currentIdx"`
+		ID             string `json:"id"`
+		CurrentIdx     int    `json:"currentIdx"`
+		CorrectChrsCnt int    `json:"correctChrsCnt"`
 	}
 	if err := json.Unmarshal(msg, &initMsg); err != nil {
 		log.Printf("invalid initial message: %v", err)
@@ -316,6 +324,7 @@ func (c *Client) readPump() {
 	// Set client properties
 	c.id = initMsg.ID
 	c.CurrentIdx = initMsg.CurrentIdx
+	c.CorrectChrsCnt = initMsg.CorrectChrsCnt
 
 	// Validate and add client to hub
 	c.hub.mu.Lock()
@@ -351,15 +360,36 @@ func (c *Client) readPump() {
 			break
 		}
 
-		var update struct {
-			CurrentIdx int `json:"currentIdx"`
+		var msgData struct {
+			Type string `json:"type"`
 		}
-		if err := json.Unmarshal(msg, &update); err != nil {
+		if err := json.Unmarshal(msg, &msgData); err != nil {
+			log.Printf("Error parsing message type: %v", err)
 			continue
 		}
 
-		c.CurrentIdx = update.CurrentIdx
-		c.broadcastUpdate()
+		switch msgData.Type {
+		case "update":
+			var update struct {
+				Type           string `json:"type"`
+				CurrentIdx     int    `json:"currentIdx"`
+				CorrectChrsCnt int    `json:"correctChrsCnt"`
+			}
+			if err := json.Unmarshal(msg, &update); err != nil {
+				log.Printf("Error parsing update message: %v", err)
+				continue
+			}
+
+			c.CurrentIdx = update.CurrentIdx
+			c.CorrectChrsCnt = update.CorrectChrsCnt
+			c.broadcastUpdate()
+
+		case "heartbeat", "ping":
+			c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+
+		default:
+			log.Printf("Received unsupported message type: %s", msgData.Type)
+		}
 	}
 }
 

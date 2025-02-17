@@ -10,6 +10,7 @@ export default class MockCompetitor implements ICompetitor {
     private gameState: GameState;
     private cursor: Cursor;
     private currentIndex: number;
+    private correctChrsCnt: number;
     private delay: number;
     private interval: number;
     private finished: boolean = false;
@@ -25,6 +26,7 @@ export default class MockCompetitor implements ICompetitor {
         cursor: Cursor,
         characters: Character[],
         currentIndex: number,
+        correctChrsCnt: number,
         delay: number,
         interval: number
     ) {
@@ -34,6 +36,7 @@ export default class MockCompetitor implements ICompetitor {
         this.cursor = cursor;
         this.characters = characters;
         this.currentIndex = currentIndex;
+        this.correctChrsCnt = correctChrsCnt;
         this.delay = delay;
         this.interval = interval;
 

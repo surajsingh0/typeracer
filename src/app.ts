@@ -6,7 +6,7 @@ import CanvasManager from "./canvas-manager";
 import { FONT_FAMILY, FONT_SIZE, PADDING, TEXT } from "./constants";
 import { WSClient } from "./ws-client";
 import { CompetitorManager } from "./competitor-manager";
-import { ServerMessage } from "./message";
+import { PlayerInfo, ServerMessage } from "./message";
 
 export default class App {
     private canvasManager: CanvasManager;
@@ -30,7 +30,8 @@ export default class App {
             this.wsClient.send({
                 id: playerID,
                 currentIdx: 0,
-            });
+                correctChrsCnt: 0,
+            } as PlayerInfo);
         });
 
         const characters = this.createCharacters();
@@ -52,7 +53,8 @@ export default class App {
                     message.players.forEach((player) => {
                         this.typeRacer.addCompetitor(
                             player.id,
-                            player.currentIdx
+                            player.currentIdx,
+                            player.correctChrsCnt
                         );
                     });
             }

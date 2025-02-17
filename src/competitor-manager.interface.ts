@@ -3,7 +3,11 @@ import GameState from "./game-state";
 
 export default interface ICompetitorManager {
     initialize(gameState: GameState, characters: Character[]): void;
-    addCompetitor(playerID: string | null, currentIdx: number | null): void;
+    addCompetitor(
+        playerID: string | null,
+        currentIdx: number | null,
+        correctChrsCnt: number | null,
+    ): void;
     draw(): void;
     update(deltaTime: number): void;
     cleanup(): void;

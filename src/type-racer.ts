@@ -5,6 +5,7 @@ import GameState from "./game-state";
 import { calculateWPM, calculateElapsedTime } from "./utils";
 import ICompetitorManager from "./competitor-manager.interface";
 import { WSClient } from "./ws-client";
+import { PlayerInfo } from "./message";
 
 export default class TypeRacer {
     private canvasManager: CanvasManager;
@@ -13,7 +14,7 @@ export default class TypeRacer {
     private curCharIdx: number;
     private myCursor: Cursor;
 
-    private correctWordsCnt: number = 0;
+    private correctChrsCnt: number = 0;
     private startTime: number;
     private wpm: number;
 
@@ -80,7 +81,7 @@ export default class TypeRacer {
             }
         } else {
             const isCorrect = typedChar === curChar.char;
-            this.correctWordsCnt += isCorrect ? 1 : 0;
+            this.correctChrsCnt += isCorrect ? 1 : 0;
             curChar.currentState = isCorrect ? "correct" : "incorrect";
             this.curCharIdx++;
             this.myCursor.move(curChar);
@@ -91,9 +92,11 @@ export default class TypeRacer {
         }
 
         this.wsClient.send({
+            type: "update",
             id: this.playerID,
             currentIdx: this.curCharIdx,
-        });
+            correctChrsCnt: this.correctChrsCnt,
+        } as PlayerInfo);
     }
 
     draw() {
@@ -107,7 +110,7 @@ export default class TypeRacer {
 
         this.wpm = !this.gameState.isOver
             ? calculateWPM(
-                  this.correctWordsCnt,
+                  this.correctChrsCnt,
                   calculateElapsedTime(this.startTime)
               )
             : this.wpm;
@@ -115,8 +118,16 @@ export default class TypeRacer {
         ctx.fillText(`WPM: ${this.wpm}`, 40, 50, 100);
     }
 
-    addCompetitor(playerID: string | null, currentIdx: number | null) {
-        this.competitorManager.addCompetitor(playerID, currentIdx);
+    addCompetitor(
+        playerID: string | null,
+        currentIdx: number | null,
+        correctChrsCnt: number | null
+    ) {
+        this.competitorManager.addCompetitor(
+            playerID,
+            currentIdx,
+            correctChrsCnt
+        );
     }
 
     update() {

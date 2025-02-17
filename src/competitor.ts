@@ -18,6 +18,7 @@ export default class Competitor implements ICompetitor {
 
     private startTime: number = 0;
     private wpm: number = 0;
+    private correctChrsCnt: number = 0;
 
     constructor(
         wsClient: WSClient,
@@ -26,7 +27,8 @@ export default class Competitor implements ICompetitor {
         gameState: GameState,
         cursor: Cursor,
         characters: Character[],
-        currentIndex: number
+        currentIndex: number,
+        correctChrsCnt: number
     ) {
         this.wsClient = wsClient;
         this.playerID = playerID;
@@ -35,6 +37,7 @@ export default class Competitor implements ICompetitor {
         this.cursor = cursor;
         this.characters = characters;
         this.currentIndex = currentIndex;
+        this.correctChrsCnt = correctChrsCnt;
         this.startTime = Date.now();
 
         this.gameState.competitorMetric = {
@@ -47,6 +50,7 @@ export default class Competitor implements ICompetitor {
                 case "update":
                     if (message.id === this.playerID) {
                         this.currentIndex = message.currentIdx;
+                        this.correctChrsCnt = message.correctChrsCnt;
                     }
                     break;
             }
@@ -85,13 +89,17 @@ export default class Competitor implements ICompetitor {
             return;
         }
 
+        if (this.currentIndex === 0) {
+            this.startTime = Date.now() - 1;
+        }
+
         if (this.currentIndex > 0) {
             const char = this.characters[this.currentIndex - 1];
             this.cursor.move(char);
         }
 
         this.wpm = calculateWPM(
-            this.currentIndex,
+            this.correctChrsCnt,
             calculateElapsedTime(this.startTime)
         );
         this.gameState.updateWpm(this.id, this.wpm);
