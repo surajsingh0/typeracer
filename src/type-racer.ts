@@ -65,9 +65,9 @@ export default class TypeRacer {
         const typedChar = event.key;
         const curChar = this.characters[this.curCharIdx];
 
-        if (this.curCharIdx === 0 && this.isStarted) {
+        if (this.curCharIdx === 0 && !this.isStarted) {
             this.startTime = Date.now();
-            this.isStarted = false;
+            this.isStarted = true;
         }
 
         if (typedChar === "Backspace") {
@@ -149,6 +149,7 @@ export default class TypeRacer {
     private end() {
         this.gameState.isOver = true;
         this.gameState.metrics = { wpm: this.wpm };
+        this.isStarted = false;
         this.cleanup();
     }
 

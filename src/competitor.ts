@@ -87,12 +87,13 @@ export default class Competitor implements ICompetitor {
 
         if (this.currentIndex >= this.characters.length) {
             this.finished = true;
+            this.isStarted = false;
             return;
         }
 
         if (this.currentIndex === 0) this.cursor.disappear();
 
-        if (this.currentIndex === 0 && this.isStarted) {
+        if (this.currentIndex === 1 && !this.isStarted) {
             this.startTime = Date.now();
             this.isStarted = true;
         }
