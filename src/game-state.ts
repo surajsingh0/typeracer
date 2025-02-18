@@ -43,6 +43,10 @@ export default class GameState {
         this.competitorsMetrics[id].wpm = wpm;
     }
 
+    updateAccuracy(id: number, accuracy: number) {
+        this.competitorsMetrics[id].accuracy = accuracy;
+    }
+
     draw() {
         this.drawCompetitors();
         this.drawInviteElements();
@@ -150,7 +154,7 @@ export default class GameState {
 
         const startX = cssWidth * 0.2;
         const startY = 50;
-        const blockWidth = 100;
+        const blockWidth = 300;
         const blockHeight = 20;
         const margin = 25;
 
@@ -170,7 +174,18 @@ export default class GameState {
             }
 
             ctx.fillStyle = color;
-            ctx.fillText(`WPM: ${metrics.wpm}`, currentX, currentY, blockWidth);
+
+            // Format accuracy to show at most 1 decimal place
+            const accuracyText =
+                metrics.accuracy !== undefined ? `${metrics.accuracy}%` : "N/A";
+
+            // Display both WPM and accuracy
+            ctx.fillText(
+                `WPM: ${metrics.wpm} | Acc: ${accuracyText}`,
+                currentX,
+                currentY,
+                blockWidth
+            );
 
             currentX += blockWidth + margin;
         }
@@ -212,7 +227,7 @@ export default class GameState {
                 metrics?.wpm === maxWpm ? winnerLineHeight : baseLineHeight;
         });
 
-        const overlayWidth = 350;
+        const overlayWidth = 400; // Increased width to accommodate accuracy
         const overlayHeight = Math.max(totalHeight, 200);
         const modalTop = centerY - overlayHeight / 2;
 
@@ -254,9 +269,15 @@ export default class GameState {
                         : "gray";
             }
 
-            // Draw text
+            // Format accuracy to show at most 1 decimal place
+            const accuracyText =
+                metrics?.accuracy !== undefined
+                    ? `${metrics.accuracy}%`
+                    : "N/A";
+
+            // Draw text with both WPM and accuracy
             ctx.fillText(
-                `${label}: ${metrics?.wpm} WPM`,
+                `${label}: ${metrics?.wpm} WPM | Accuracy: ${accuracyText}`,
                 centerX,
                 currentY,
                 overlayWidth - padding * 2

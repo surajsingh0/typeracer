@@ -1,7 +1,7 @@
 import Character from "./character";
 import Cursor from "./cursor";
 import GameState from "./game-state";
-import { calculateElapsedTime, calculateWPM } from "./utils";
+import { calculateAccuracy, calculateElapsedTime, calculateWPM } from "./utils";
 import { WSClient } from "./ws-client";
 import { ServerMessage } from "./message";
 import ICompetitor from "./competitor.interface";
@@ -12,14 +12,15 @@ export default class Competitor implements ICompetitor {
     private gameState: GameState;
     private cursor: Cursor;
     private currentIndex: number;
-    private finished: boolean = false;
+    private finished = false;
     private isStarted = false;
     private characters: Character[];
     private wsClient: WSClient;
 
-    private startTime: number = 0;
-    private wpm: number = 0;
-    private correctChrsCnt: number = 0;
+    private startTime = 0;
+    private wpm = 0;
+    private accuracy = 0;
+    private correctChrsCnt = 0;
 
     constructor(
         wsClient: WSClient,
@@ -44,6 +45,7 @@ export default class Competitor implements ICompetitor {
         this.gameState.competitorMetric = {
             id: id,
             wpm: 0,
+            accuracy: this.accuracy,
         };
 
         this.wsClient.on("message", (message: ServerMessage) => {
@@ -107,6 +109,11 @@ export default class Competitor implements ICompetitor {
             this.correctChrsCnt,
             calculateElapsedTime(this.startTime)
         );
+        this.accuracy = calculateAccuracy(
+            this.correctChrsCnt,
+            this.currentIndex
+        );
         this.gameState.updateWpm(this.id, this.wpm);
+        this.gameState.updateAccuracy(this.id, this.accuracy);
     }
 }

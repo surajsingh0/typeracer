@@ -2,7 +2,7 @@ import CanvasManager from "./canvas-manager";
 import Character from "./character";
 import Cursor from "./cursor";
 import GameState from "./game-state";
-import { calculateWPM, calculateElapsedTime } from "./utils";
+import { calculateWPM, calculateElapsedTime, calculateAccuracy } from "./utils";
 import ICompetitorManager from "./competitor-manager.interface";
 import { WSClient } from "./ws-client";
 import { PlayerInfo } from "./message";
@@ -11,13 +11,14 @@ export default class TypeRacer {
     private canvasManager: CanvasManager;
     private gameState: GameState;
     private characters: Character[];
-    private curCharIdx: number;
+    private curCharIdx = 0;
     private isStarted = false;
     private myCursor: Cursor;
 
-    private correctChrsCnt: number = 0;
+    private correctChrsCnt = 0;
     private startTime: number;
-    private wpm: number;
+    private wpm = 0;
+    private accuracy = 0;
 
     private lastUpdateTimestamp: number = performance.now();
     private competitorManager: ICompetitorManager;
@@ -37,12 +38,10 @@ export default class TypeRacer {
         this.canvasManager = canvasManager;
         this.gameState = gameState;
         this.characters = characters;
-        this.curCharIdx = 0;
         this.myCursor = myCursor;
         myCursor.disappear();
 
         this.startTime = Date.now();
-        this.wpm = 0;
 
         this.competitorManager = competitorManager;
         this.competitorManager.initialize(gameState, characters);
@@ -75,6 +74,9 @@ export default class TypeRacer {
                 return;
             }
             this.curCharIdx--;
+            if (this.characters[this.curCharIdx].currentState === "correct") {
+                this.correctChrsCnt--;
+            }
             this.characters[this.curCharIdx].currentState = "neutral";
             if (this.curCharIdx === 0) {
                 this.myCursor.disappear();
@@ -110,14 +112,21 @@ export default class TypeRacer {
         this.myCursor.draw();
         this.competitorManager.draw();
 
-        this.wpm = !this.gameState.isOver
-            ? calculateWPM(
-                  this.correctChrsCnt,
-                  calculateElapsedTime(this.startTime)
-              )
-            : this.wpm;
+        this.wpm =
+            !this.gameState.isOver && this.isStarted
+                ? calculateWPM(
+                      this.correctChrsCnt,
+                      calculateElapsedTime(this.startTime)
+                  )
+                : this.wpm;
+        this.accuracy =
+            !this.gameState.isOver && this.isStarted
+                ? calculateAccuracy(this.correctChrsCnt, this.curCharIdx)
+                : this.accuracy;
+
         ctx.fillStyle = "rgb(152, 152, 152)";
-        ctx.fillText(`WPM: ${this.wpm}`, 40, 50, 100);
+        ctx.fillText(`WPM: ${this.wpm}`, 40, 50, 200);
+        ctx.fillText(`Acc: ${this.accuracy}%`, 40, 85, 200);
     }
 
     addCompetitor(
@@ -148,7 +157,7 @@ export default class TypeRacer {
 
     private end() {
         this.gameState.isOver = true;
-        this.gameState.metrics = { wpm: this.wpm };
+        this.gameState.metrics = { wpm: this.wpm, accuracy: this.accuracy };
         this.isStarted = false;
         this.cleanup();
     }
