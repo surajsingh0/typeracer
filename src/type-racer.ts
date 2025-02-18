@@ -12,6 +12,7 @@ export default class TypeRacer {
     private gameState: GameState;
     private characters: Character[];
     private curCharIdx: number;
+    private isStarted = false;
     private myCursor: Cursor;
 
     private correctChrsCnt: number = 0;
@@ -64,8 +65,9 @@ export default class TypeRacer {
         const typedChar = event.key;
         const curChar = this.characters[this.curCharIdx];
 
-        if (this.curCharIdx === 0) {
+        if (this.curCharIdx === 0 && this.isStarted) {
             this.startTime = Date.now();
+            this.isStarted = false;
         }
 
         if (typedChar === "Backspace") {

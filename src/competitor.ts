@@ -13,6 +13,7 @@ export default class Competitor implements ICompetitor {
     private cursor: Cursor;
     private currentIndex: number;
     private finished: boolean = false;
+    private isStarted = false;
     private characters: Character[];
     private wsClient: WSClient;
 
@@ -89,8 +90,11 @@ export default class Competitor implements ICompetitor {
             return;
         }
 
-        if (this.currentIndex === 0) {
-            this.startTime = Date.now() - 1;
+        if (this.currentIndex === 0) this.cursor.disappear();
+
+        if (this.currentIndex === 0 && this.isStarted) {
+            this.startTime = Date.now();
+            this.isStarted = true;
         }
 
         if (this.currentIndex > 0) {
