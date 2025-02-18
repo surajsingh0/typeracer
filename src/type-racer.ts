@@ -20,6 +20,10 @@ export default class TypeRacer {
     private wpm = 0;
     private accuracy = 0;
 
+    private updateInterval: number;
+    private lastSentTime = 0;
+    private readonly throttleDelay = 100;
+
     private lastUpdateTimestamp: number = performance.now();
     private competitorManager: ICompetitorManager;
 
@@ -51,6 +55,21 @@ export default class TypeRacer {
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
         document.addEventListener("keydown", this.handleKeyDown);
+
+        this.updateInterval = setInterval(() => {
+            this.updateStats();
+            this.sendUpdates();
+        }, 1000);
+    }
+
+    private updateStats() {
+        if (!this.isStarted || this.gameState.isOver) return;
+
+        this.wpm = calculateWPM(
+            this.correctChrsCnt,
+            calculateElapsedTime(this.startTime)
+        );
+        this.accuracy = calculateAccuracy(this.correctChrsCnt, this.curCharIdx);
     }
 
     private handleKeyDown(event: KeyboardEvent) {
@@ -95,11 +114,23 @@ export default class TypeRacer {
             }
         }
 
+        this.updateStats();
+        this.sendUpdates();
+    }
+
+    private sendUpdates() {
+        const now = Date.now();
+        if (now - this.lastSentTime < this.throttleDelay) {
+            return;
+        }
+        this.lastSentTime = now;
+
         this.wsClient.send({
             type: "update",
             id: this.playerID,
             currentIdx: this.curCharIdx,
             correctChrsCnt: this.correctChrsCnt,
+            wpm: this.wpm,
         } as PlayerInfo);
     }
 
@@ -112,18 +143,6 @@ export default class TypeRacer {
         this.myCursor.draw();
         this.competitorManager.draw();
 
-        this.wpm =
-            !this.gameState.isOver && this.isStarted
-                ? calculateWPM(
-                      this.correctChrsCnt,
-                      calculateElapsedTime(this.startTime)
-                  )
-                : this.wpm;
-        this.accuracy =
-            !this.gameState.isOver && this.isStarted
-                ? calculateAccuracy(this.correctChrsCnt, this.curCharIdx)
-                : this.accuracy;
-
         ctx.fillStyle = "rgb(152, 152, 152)";
         ctx.fillText(`WPM: ${this.wpm}`, 40, 50, 200);
         ctx.fillText(`Acc: ${this.accuracy}%`, 40, 85, 200);
@@ -132,12 +151,14 @@ export default class TypeRacer {
     addCompetitor(
         playerID: string | null,
         currentIdx: number | null,
-        correctChrsCnt: number | null
+        correctChrsCnt: number | null,
+        wpm: number | null
     ) {
         this.competitorManager.addCompetitor(
             playerID,
             currentIdx,
-            correctChrsCnt
+            correctChrsCnt,
+            wpm
         );
     }
 
@@ -164,5 +185,6 @@ export default class TypeRacer {
 
     private cleanup() {
         document.removeEventListener("keypress", this.handleKeyDown);
+        clearInterval(this.updateInterval);
     }
 }

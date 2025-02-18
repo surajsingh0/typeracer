@@ -44,6 +44,7 @@ export default class MockCompetitor implements ICompetitor {
         this.gameState.competitorMetric = {
             id: this.id,
             wpm: 0,
+            accuracy: 0,
         };
     }
 

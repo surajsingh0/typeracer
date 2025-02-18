@@ -1,7 +1,7 @@
 import Character from "./character";
 import Cursor from "./cursor";
 import GameState from "./game-state";
-import { calculateAccuracy, calculateElapsedTime, calculateWPM } from "./utils";
+import { calculateAccuracy } from "./utils";
 import { WSClient } from "./ws-client";
 import { ServerMessage } from "./message";
 import ICompetitor from "./competitor.interface";
@@ -13,11 +13,9 @@ export default class Competitor implements ICompetitor {
     private cursor: Cursor;
     private currentIndex: number;
     private finished = false;
-    private isStarted = false;
     private characters: Character[];
     private wsClient: WSClient;
 
-    private startTime = 0;
     private wpm = 0;
     private accuracy = 0;
     private correctChrsCnt = 0;
@@ -30,7 +28,8 @@ export default class Competitor implements ICompetitor {
         cursor: Cursor,
         characters: Character[],
         currentIndex: number,
-        correctChrsCnt: number
+        correctChrsCnt: number,
+        wpm: number
     ) {
         this.wsClient = wsClient;
         this.playerID = playerID;
@@ -40,13 +39,12 @@ export default class Competitor implements ICompetitor {
         this.characters = characters;
         this.currentIndex = currentIndex;
         this.correctChrsCnt = correctChrsCnt;
-        this.startTime = Date.now();
-
-        this.gameState.competitorMetric = {
-            id: id,
-            wpm: 0,
-            accuracy: this.accuracy,
-        };
+        (this.wpm = wpm),
+            (this.gameState.competitorMetric = {
+                id: id,
+                wpm: 0,
+                accuracy: this.accuracy,
+            });
 
         this.wsClient.on("message", (message: ServerMessage) => {
             switch (message.type) {
@@ -54,6 +52,7 @@ export default class Competitor implements ICompetitor {
                     if (message.id === this.playerID) {
                         this.currentIndex = message.currentIdx;
                         this.correctChrsCnt = message.correctChrsCnt;
+                        this.wpm = message.wpm;
                     }
                     break;
             }
@@ -89,26 +88,16 @@ export default class Competitor implements ICompetitor {
 
         if (this.currentIndex >= this.characters.length) {
             this.finished = true;
-            this.isStarted = false;
             return;
         }
 
         if (this.currentIndex === 0) this.cursor.disappear();
-
-        if (this.currentIndex === 1 && !this.isStarted) {
-            this.startTime = Date.now();
-            this.isStarted = true;
-        }
 
         if (this.currentIndex > 0) {
             const char = this.characters[this.currentIndex - 1];
             this.cursor.move(char);
         }
 
-        this.wpm = calculateWPM(
-            this.correctChrsCnt,
-            calculateElapsedTime(this.startTime)
-        );
         this.accuracy = calculateAccuracy(
             this.correctChrsCnt,
             this.currentIndex

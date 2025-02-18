@@ -73,6 +73,7 @@ export default class App {
                 id: playerID,
                 currentIdx: 0,
                 correctChrsCnt: 0,
+                wpm: 0,
             } as PlayerInfo);
         });
 
@@ -98,7 +99,8 @@ export default class App {
                         this.typeRacer?.addCompetitor(
                             player.id,
                             player.currentIdx,
-                            player.correctChrsCnt
+                            player.correctChrsCnt,
+                            player.wpm
                         );
                     });
             }

@@ -106,6 +106,7 @@ type Player struct {
 	id             string
 	CurrentIdx     int
 	CorrectChrsCnt int
+	WPM            int
 }
 
 // Hub maintains the set of active clients
@@ -230,6 +231,7 @@ func (c *Client) sendCurrentState() {
 				"id":             id,
 				"currentIdx":     client.CurrentIdx,
 				"correctChrsCnt": client.CorrectChrsCnt,
+				"wpm":            client.WPM,
 			})
 		}
 	}
@@ -253,6 +255,7 @@ func (c *Client) broadcastJoin() {
 		"id":             c.id,
 		"currentIdx":     c.CurrentIdx,
 		"correctChrsCnt": c.CorrectChrsCnt,
+		"wpm":            c.WPM,
 	})
 
 	select {
@@ -268,6 +271,7 @@ func (c *Client) broadcastUpdate() {
 		"id":             c.id,
 		"currentIdx":     c.CurrentIdx,
 		"correctChrsCnt": c.CorrectChrsCnt,
+		"wpm":            c.WPM,
 	})
 
 	select {
@@ -315,6 +319,7 @@ func (c *Client) readPump() {
 		ID             string `json:"id"`
 		CurrentIdx     int    `json:"currentIdx"`
 		CorrectChrsCnt int    `json:"correctChrsCnt"`
+		WPM            int    `json:"wpm"`
 	}
 	if err := json.Unmarshal(msg, &initMsg); err != nil {
 		log.Printf("invalid initial message: %v", err)
@@ -374,6 +379,7 @@ func (c *Client) readPump() {
 				Type           string `json:"type"`
 				CurrentIdx     int    `json:"currentIdx"`
 				CorrectChrsCnt int    `json:"correctChrsCnt"`
+				WPM            int    `json:"wpm"`
 			}
 			if err := json.Unmarshal(msg, &update); err != nil {
 				log.Printf("Error parsing update message: %v", err)
@@ -382,6 +388,7 @@ func (c *Client) readPump() {
 
 			c.CurrentIdx = update.CurrentIdx
 			c.CorrectChrsCnt = update.CorrectChrsCnt
+			c.WPM = update.WPM
 			c.broadcastUpdate()
 
 		case "heartbeat", "ping":

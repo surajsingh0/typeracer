@@ -7,6 +7,7 @@ export default interface ICompetitorManager {
         playerID: string | null,
         currentIdx: number | null,
         correctChrsCnt: number | null,
+        wpm: number | null
     ): void;
     draw(): void;
     update(deltaTime: number): void;

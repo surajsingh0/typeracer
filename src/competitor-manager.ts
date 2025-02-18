@@ -23,7 +23,7 @@ export class CompetitorManager implements ICompetitorManager {
         this.wsClient.on("message", (message: ServerMessage) => {
             switch (message.type) {
                 case "join":
-                    this.addCompetitor(message.id, null, null);
+                    this.addCompetitor(message.id, null, null, null);
                     break;
                 case "leave":
                     this.removeCompetitor(message.id);
@@ -40,7 +40,8 @@ export class CompetitorManager implements ICompetitorManager {
     addCompetitor(
         playerID: string | null,
         currentIdx: number | null,
-        correctChrsCnt: number | null
+        correctChrsCnt: number | null,
+        wpm: number | null
     ) {
         if (this.competitors.length === 10) {
             return;
@@ -60,7 +61,8 @@ export class CompetitorManager implements ICompetitorManager {
             newCursor,
             this.characters,
             currentIdx ?? 0,
-            correctChrsCnt ?? 0
+            correctChrsCnt ?? 0,
+            wpm ?? 0
         );
         this.competitors.push(competitor);
     }
