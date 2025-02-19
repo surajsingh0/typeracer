@@ -88,7 +88,6 @@ export default class App {
             characters,
             cursor,
             new CompetitorManager(this.canvasManager, this.wsClient),
-            playerID,
             this.wsClient
         );
 

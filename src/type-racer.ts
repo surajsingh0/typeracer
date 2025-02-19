@@ -27,7 +27,6 @@ export default class TypeRacer {
     private lastUpdateTimestamp: number = performance.now();
     private competitorManager: ICompetitorManager;
 
-    private playerID;
     private wsClient: WSClient;
 
     constructor(
@@ -36,7 +35,6 @@ export default class TypeRacer {
         characters: Character[],
         myCursor: Cursor,
         competitorManager: ICompetitorManager,
-        playerID: string,
         wsClient: WSClient
     ) {
         this.canvasManager = canvasManager;
@@ -50,7 +48,6 @@ export default class TypeRacer {
         this.competitorManager = competitorManager;
         this.competitorManager.initialize(gameState, characters);
 
-        this.playerID = playerID;
         this.wsClient = wsClient;
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -127,11 +124,10 @@ export default class TypeRacer {
 
         this.wsClient.send({
             type: "update",
-            id: this.playerID,
             currentIdx: this.curCharIdx,
             correctChrsCnt: this.correctChrsCnt,
             wpm: this.wpm,
-        } as PlayerInfo);
+        } as Omit<PlayerInfo, "id">);
     }
 
     draw() {
