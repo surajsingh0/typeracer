@@ -99,3 +99,37 @@ export const calculateNetWPM = (wpm: number, errorRate: number): number => {
     const penalty = errorRate / 100; // Convert error rate to a fraction
     return Math.round(wpm * (1 - penalty));
 };
+
+export const generateUsername = () => {
+    const prefixes = [
+        "Ace",
+        "Rex",
+        "Fox",
+        "Leo",
+        "Max",
+        "Neo",
+        "Sky",
+        "Zen",
+        "Kai",
+        "Lux",
+    ];
+
+    const suffixes = [
+        "Pro",
+        "Win",
+        "Up",
+        "Go",
+        "Run",
+        "Top",
+        "One",
+        "Ace",
+        "Pro",
+        "Max",
+    ];
+
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    const num = Math.floor(Math.random() * 100);
+
+    return `${prefix}${suffix}${num}`;
+};

@@ -152,14 +152,18 @@ export default class GameState {
     private drawCompetitors() {
         const { ctx, cssWidth } = this.canvasManager;
 
+        ctx.save();
+
         const startX = cssWidth * 0.2;
-        const startY = 50;
-        const blockWidth = 300;
-        const blockHeight = 20;
-        const margin = 25;
+        const startY = 30;
+        const blockWidth = 150;
+        const blockHeight = 25;
+        const margin = 20;
 
         let currentX = startX;
         let currentY = startY;
+
+        ctx.font = "14px system-ui";
 
         for (let i = 0; i < this.competitorsMetrics.length; i++) {
             const metrics = this.competitorsMetrics[i];
@@ -168,27 +172,36 @@ export default class GameState {
                     ? CURSOR_COLORS[metrics.id].hex
                     : "gray";
 
-            if (currentX + blockWidth > cssWidth) {
+            if (currentX + blockWidth > cssWidth - 20) {
                 currentX = startX;
                 currentY += blockHeight + margin;
             }
 
             ctx.fillStyle = color;
 
-            // Format accuracy to show at most 1 decimal place
             const accuracyText =
-                metrics.accuracy !== undefined ? `${metrics.accuracy}%` : "N/A";
+                metrics.accuracy !== undefined
+                    ? `${metrics.accuracy.toFixed(1)}%`
+                    : "N/A";
+            const playerIDText = metrics.playerID || `Player ${metrics.id}`;
 
-            // Display both WPM and accuracy
+            ctx.fillText(playerIDText, currentX, currentY, blockWidth);
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.font = "18px system-ui";
             ctx.fillText(
-                `WPM: ${metrics.wpm} | Acc: ${accuracyText}`,
+                `${metrics.wpm} WPM • ${accuracyText}`,
                 currentX,
-                currentY,
-                blockWidth
+                currentY + blockHeight - 4,
+                blockWidth + 20
             );
+
+            ctx.font = "14px system-ui";
 
             currentX += blockWidth + margin;
         }
+
+        ctx.restore();
     }
 
     private drawFinished() {
@@ -197,93 +210,99 @@ export default class GameState {
 
         ctx.save();
 
-        // Dim the background
-        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 0, cssWidth, cssHeight);
 
-        // Combine all participants including player
         const allParticipants = [
             ...this.competitorsMetrics,
-            this.typeRacerMetrics,
+            {
+                ...this.typeRacerMetrics,
+                playerID: this.typeRacerMetrics?.playerID + " (You)",
+            },
         ];
-
-        // Sort by WPM descending
         const sortedCompetitors = allParticipants.sort(
             (a, b) => (b?.wpm || 0) - (a?.wpm || 0)
         );
         const maxWpm = sortedCompetitors[0]?.wpm || 0;
 
-        // Calculate dynamic dimensions
-        const baseFontSize = 20;
-        const winnerFontSize = 24;
-        const baseLineHeight = 30;
-        const winnerLineHeight = 35;
-        const padding = 20;
+        const titleFontSize = 22;
+        const baseFontSize = 16;
+        const winnerFontSize = 18;
+        const baseLineHeight = 24;
+        const winnerLineHeight = 28;
+        const padding = 16;
 
-        // Calculate total height
-        let totalHeight = padding * 2 + baseLineHeight * 1.5; // Game Over! + spacing
+        let totalHeight = padding * 2 + baseLineHeight * 1.5;
         sortedCompetitors.forEach((metrics) => {
             totalHeight +=
                 metrics?.wpm === maxWpm ? winnerLineHeight : baseLineHeight;
         });
 
-        const overlayWidth = 400; // Increased width to accommodate accuracy
-        const overlayHeight = Math.max(totalHeight, 200);
+        const overlayWidth = 400;
+        const overlayHeight = Math.max(totalHeight, 180);
         const modalTop = centerY - overlayHeight / 2;
 
-        // Draw overlay
         ctx.fillStyle = "rgb(0, 0, 0)";
-        ctx.fillRect(
+        ctx.beginPath();
+        ctx.roundRect(
             centerX - overlayWidth / 2,
             modalTop,
             overlayWidth,
-            overlayHeight
+            overlayHeight,
+            8
         );
+        ctx.fill();
 
-        // Set initial styles
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         let currentY = modalTop + padding;
 
-        // Draw game over text
         ctx.fillStyle = "rgb(230, 230, 230)";
-        ctx.font = `${baseFontSize}px monospace`;
+        ctx.font = `${titleFontSize}px system-ui`;
         ctx.fillText("Game Over!", centerX, currentY);
         currentY += baseLineHeight * 1.5;
 
-        // Draw all competitors including player
-        sortedCompetitors.forEach((metrics) => {
+        sortedCompetitors.forEach((metrics, index) => {
             const isWinner = metrics?.wpm === maxWpm;
             const isPlayer = metrics === this.typeRacerMetrics;
-            const label = isPlayer ? "You" : `Player ${metrics?.id}`;
 
-            // Set winner styles
+            let label = isPlayer
+                ? metrics?.playerID || "You"
+                : metrics?.playerID || `Player ${metrics?.id}`;
+
+            const position = `#${index + 1}`;
+
             if (isWinner) {
-                ctx.font = `bold ${winnerFontSize}px monospace`;
-                ctx.fillStyle = "#FFD700"; // Gold color for winner
+                ctx.font = `bold ${winnerFontSize}px system-ui`;
+                ctx.fillStyle = "#FFD700";
             } else {
-                ctx.font = `${baseFontSize}px monospace`;
+                ctx.font = `${baseFontSize}px system-ui`;
                 ctx.fillStyle =
                     metrics?.id !== undefined
                         ? CURSOR_COLORS[metrics.id].hex
                         : "gray";
             }
 
-            // Format accuracy to show at most 1 decimal place
             const accuracyText =
                 metrics?.accuracy !== undefined
-                    ? `${metrics.accuracy}%`
+                    ? `${metrics.accuracy.toFixed(1)}%`
                     : "N/A";
 
-            // Draw text with both WPM and accuracy
+            ctx.textAlign = "left";
             ctx.fillText(
-                `${label}: ${metrics?.wpm} WPM | Accuracy: ${accuracyText}`,
-                centerX,
+                `${position} ${label}`,
+                centerX - overlayWidth / 2 + padding * 2,
                 currentY,
-                overlayWidth - padding * 2
+                overlayWidth - padding * 4
             );
 
-            // Update Y position
+            ctx.textAlign = "right";
+            ctx.fillText(
+                `${metrics?.wpm} WPM • ${accuracyText}`,
+                centerX + overlayWidth / 2 - padding * 2,
+                currentY
+            );
+
             currentY += isWinner ? winnerLineHeight : baseLineHeight;
         });
 

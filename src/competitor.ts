@@ -42,7 +42,8 @@ export default class Competitor implements ICompetitor {
         (this.wpm = wpm),
             (this.gameState.competitorMetric = {
                 id: id,
-                wpm: 0,
+                playerID: playerID,
+                wpm: this.wpm,
                 accuracy: this.accuracy,
             });
 
@@ -86,11 +87,6 @@ export default class Competitor implements ICompetitor {
     update(deltaTime: number) {
         if (this.finished) return;
 
-        if (this.currentIndex >= this.characters.length) {
-            this.finished = true;
-            return;
-        }
-
         if (this.currentIndex === 0) this.cursor.disappear();
 
         if (this.currentIndex > 0) {
@@ -104,5 +100,9 @@ export default class Competitor implements ICompetitor {
         );
         this.gameState.updateWpm(this.id, this.wpm);
         this.gameState.updateAccuracy(this.id, this.accuracy);
+
+        if (this.currentIndex >= this.characters.length) {
+            this.finished = true;
+        }
     }
 }

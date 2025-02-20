@@ -28,6 +28,7 @@ export default class TypeRacer {
     private competitorManager: ICompetitorManager;
 
     private wsClient: WSClient;
+    private playerID: string;
 
     constructor(
         canvasManager: CanvasManager,
@@ -35,7 +36,8 @@ export default class TypeRacer {
         characters: Character[],
         myCursor: Cursor,
         competitorManager: ICompetitorManager,
-        wsClient: WSClient
+        wsClient: WSClient,
+        playerID: string
     ) {
         this.canvasManager = canvasManager;
         this.gameState = gameState;
@@ -49,6 +51,7 @@ export default class TypeRacer {
         this.competitorManager.initialize(gameState, characters);
 
         this.wsClient = wsClient;
+        this.playerID = playerID;
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
         document.addEventListener("keydown", this.handleKeyDown);
@@ -108,6 +111,7 @@ export default class TypeRacer {
 
             if (this.curCharIdx === this.characters.length) {
                 this.end();
+                return;
             }
         }
 
@@ -115,9 +119,9 @@ export default class TypeRacer {
         this.sendUpdates();
     }
 
-    private sendUpdates() {
+    private sendUpdates(isTrottled = true) {
         const now = Date.now();
-        if (now - this.lastSentTime < this.throttleDelay) {
+        if (now - this.lastSentTime < this.throttleDelay && isTrottled) {
             return;
         }
         this.lastSentTime = now;
@@ -140,8 +144,10 @@ export default class TypeRacer {
         this.competitorManager.draw();
 
         ctx.fillStyle = "rgb(152, 152, 152)";
-        ctx.fillText(`WPM: ${this.wpm}`, 40, 50, 200);
-        ctx.fillText(`Acc: ${this.accuracy}%`, 40, 85, 200);
+        ctx.fillText(`${this.playerID}`, 40, 40, 200);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.fillText(`WPM: ${this.wpm}`, 40, 75, 200);
+        ctx.fillText(`Acc: ${this.accuracy}%`, 40, 105, 200);
     }
 
     addCompetitor(
@@ -173,8 +179,14 @@ export default class TypeRacer {
     }
 
     private end() {
+        this.updateStats();
+        this.sendUpdates(false);
         this.gameState.isOver = true;
-        this.gameState.metrics = { wpm: this.wpm, accuracy: this.accuracy };
+        this.gameState.metrics = {
+            playerID: this.playerID,
+            wpm: this.wpm,
+            accuracy: this.accuracy,
+        };
         this.isStarted = false;
         this.cleanup();
     }

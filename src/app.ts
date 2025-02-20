@@ -7,6 +7,7 @@ import { FONT_FAMILY, FONT_SIZE, PADDING, TEXT } from "./constants";
 import { WSClient } from "./ws-client";
 import { CompetitorManager } from "./competitor-manager";
 import { PlayerInfo, ServerMessage } from "./message";
+import { generateUsername } from "./utils";
 
 export default class App {
     private canvasManager: CanvasManager;
@@ -32,7 +33,7 @@ export default class App {
         if (isRoom) {
             const room = params.get("room") as string;
             const parts = room?.split("_");
-            if (parts?.length >= 3) {
+            if (parts?.length >= 2) {
                 const pIdxPart = parts[parts?.length - 1];
                 paragraphData.idx = parseInt(pIdxPart);
 
@@ -49,10 +50,7 @@ export default class App {
             paragraphData.idx = data?.index as number | null;
             paragraphData.paragraph = data?.paragraph;
             roomID =
-                "room_" +
-                Math.random().toString(36).slice(2, 11) +
-                "_" +
-                data?.index;
+                Math.random().toString(36).slice(2, 11) + "_" + data?.index;
         }
 
         const url = new URL(window.location.href);
@@ -65,7 +63,7 @@ export default class App {
         });
         this.wsClient.connect();
 
-        const playerID = "player_" + Math.random().toString(36).slice(2, 11);
+        const playerID = generateUsername();
 
         this.wsClient.on("open", () => {
             console.log("Connected to server");
@@ -88,7 +86,8 @@ export default class App {
             characters,
             cursor,
             new CompetitorManager(this.canvasManager, this.wsClient),
-            this.wsClient
+            this.wsClient,
+            playerID
         );
 
         this.wsClient.on("message", (message: ServerMessage) => {
