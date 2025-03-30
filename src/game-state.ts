@@ -219,93 +219,81 @@ export default class GameState {
         ctx.save();
 
         // Define Track Area & Parameters
-        const trackTopMargin = cssHeight * 0.05; // Space above track
-        const trackBottomMargin = cssHeight * 0.2; // Space below track (before text area)
-        const trackHeight = cssHeight - trackTopMargin - trackBottomMargin;
-        const laneHeight = Math.max(
-            20,
-            Math.min(
-                40,
-                trackHeight / (this.allParticipantsMetrics.length || 1)
-            )
-        ); // Dynamic lane height
-        const carHeight = laneHeight * 0.7; // Car height relative to lane
-        const carWidth = carHeight * 1.8; // Maintain aspect ratio
-        const trackStartX = cssWidth * 0.05; // Left padding for track
-        const trackEndX = cssWidth * 0.95; // Right padding for track
-        const trackLength = trackEndX - trackStartX - carWidth; // Available horizontal distance for movement
-        const maxWpmForTrack = 150; // WPM value that corresponds to reaching the finish line
+        const trackAreaHeight = cssHeight * 0.15;
+        const trackTopMargin = 0;
+        const trackCenterY = trackTopMargin + trackAreaHeight / 2;
 
-        // Draw Track Lines (optional visual aid)
+        // Define fixed car size (relative to track area height)
+        const carHeight = trackAreaHeight * 0.3;
+        const carWidth = carHeight * 1.8;
+
+        // Single track Y position (center car vertically in the track area)
+        const trackY = trackCenterY - carHeight / 2;
+
+        const trackStartX = cssWidth * 0.02;
+        const trackEndX = cssWidth * 0.98;
+        const trackLength = trackEndX - trackStartX - carWidth;
+        const maxWpmForTrack = 150;
+
+        // Draw Single Track Line
         ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(trackStartX, trackTopMargin);
-        ctx.lineTo(trackEndX, trackTopMargin);
-        ctx.moveTo(trackStartX, trackTopMargin + trackHeight);
-        ctx.lineTo(trackEndX, trackTopMargin + trackHeight);
+        const lineY = trackCenterY;
+        ctx.moveTo(trackStartX, lineY);
+        ctx.lineTo(trackEndX, lineY);
         ctx.stroke();
 
-        // Draw Finish Line (optional visual aid)
+        // Draw Finish Line
         ctx.strokeStyle = "white";
         ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(trackEndX - carWidth / 2, trackTopMargin); // Position near end
-        ctx.lineTo(trackEndX - carWidth / 2, trackTopMargin + trackHeight);
+        ctx.moveTo(trackEndX - carWidth / 2, trackTopMargin);
+        ctx.lineTo(trackEndX - carWidth / 2, trackTopMargin + trackAreaHeight);
         ctx.stroke();
-        ctx.setLineDash([]); // Reset line dash
+        ctx.setLineDash([]);
 
-        // Draw each participant's car
+        // Draw Player Count
+        const playerCount = this.allParticipantsMetrics.length;
+        const maxPlayers = 11;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.font = `${this.baseFontSize * 0.9}px system-ui`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText(`Players: ${playerCount}/${maxPlayers}`, trackStartX, trackTopMargin + 5);
+
+        // Draw each participant's car on the single track
         this.allParticipantsMetrics.forEach((participant, index) => {
-            // Calculate progress (0 to 1)
-            const progress = Math.min(
-                1,
-                (participant.wpm || 0) / maxWpmForTrack
-            );
-
-            // Calculate car's X position
+            const progress = Math.min(1, (participant.wpm || 0) / maxWpmForTrack);
             const carX = trackStartX + progress * trackLength;
+            const carY = trackY;
 
-            // Calculate car's Y position (lane)
-            const carY =
-                trackTopMargin +
-                index * laneHeight +
-                (laneHeight - carHeight) / 2; // Center car vertically in its lane
-
-            // Determine color
-            const color = CURSOR_COLORS[index % CURSOR_COLORS.length].hex; // Assign color based on index
-
-            // Draw the car
+            const color = CURSOR_COLORS[index % CURSOR_COLORS.length].hex;
             this.drawCar(carX, carY, carWidth, carHeight, color);
 
-            // Optional: Draw Player ID next to car
+            // Draw Player ID & Stats next to car with adjusted font sizes
+            const labelFontSize = Math.max(12, carHeight * 0.45); // Increased from 0.35
+            const statsFontSize = Math.max(11, carHeight * 0.4); // Increased from 0.3
+
+            // Draw Player ID
             ctx.fillStyle = "white";
-            ctx.font = `${Math.max(10, carHeight * 0.4)}px system-ui`; // Font size relative to car
+            ctx.font = `${labelFontSize}px system-ui`;
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
             const playerLabel = participant.isPlayer
                 ? `${participant.playerID} (You)`
                 : participant.playerID;
-            ctx.fillText(
-                playerLabel,
-                carX + carWidth + 5,
-                carY + carHeight / 2
-            );
+            const labelY = carY + carHeight * 0.3;
+            ctx.fillText(playerLabel, carX + carWidth + 5, labelY);
 
-            // Draw WPM and Accuracy below the label
-            ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; // Slightly transparent white
-            const statsFontSize = Math.max(8, carHeight * 0.35); // Slightly smaller font
+            // Draw Stats
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
             ctx.font = `${statsFontSize}px system-ui`;
             const accuracyText = participant.accuracy !== undefined ? `${participant.accuracy.toFixed(0)}%` : 'N/A';
             const statsText = `${participant.wpm || 0} WPM | ${accuracyText}`;
-            const labelMetrics = ctx.measureText(playerLabel); // Measure the label width if needed for alignment, though not strictly needed here
-            const statsY = carY + carHeight / 2 + statsFontSize * 1.2; // Position below the label's baseline
-
-            ctx.fillText(
-                statsText,
-                carX + carWidth + 5, // Align with the label start
-                statsY
-            );
+            const statsY = labelY + statsFontSize * 1.2;
+            ctx.fillText(statsText, carX + carWidth + 5, statsY);
         });
 
         ctx.restore();

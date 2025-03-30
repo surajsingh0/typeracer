@@ -45,8 +45,8 @@ export const createCharactersFromText = (
     fontFamily: string,
 ): Character[] => {
     const { ctx, cssWidth, cssHeight } = canvasManager;
-    const padding = cssWidth * 0.1;
-    const maxLineWidth = cssWidth - 2 * padding;
+    const horizontalPadding = cssWidth * 0.05;
+    const maxLineWidth = cssWidth - 2 * horizontalPadding;
     const charSpacing = fontSize * 0.15;
     const lineHeightMultiplier = 1.4;
     const lineHeight = fontSize * lineHeightMultiplier;
@@ -59,16 +59,14 @@ export const createCharactersFromText = (
 
     const linesInfo = calculateLines(ctx, words, maxLineWidth, charSpacing);
     const totalHeight = linesInfo.length * lineHeight;
-    const startY = Math.max(
-        cssHeight * 0.2,
-        (cssHeight - totalHeight) / 2
-    );
+    const raceTrackHeight = cssHeight * 0.15;
+    const startY = raceTrackHeight + lineHeight;
 
-    let currentX = padding;
+    let currentX = horizontalPadding;
     let currentY = startY;
 
     for (const line of linesInfo) {
-        currentX = padding;
+        currentX = horizontalPadding;
         const wordsInLine = line.split(' ');
         for(const word of wordsInLine) {
              for (let j = 0; j < word.length; j++) {
