@@ -48,11 +48,15 @@ export default class Cursor {
             return;
         }
 
-        const baselineOffset = this.fontSize * 0.8;
-        const cursorY = this.currentY - baselineOffset;
+        // Calculate the top Y position for the cursor rectangle.
+        // Since textBaseline is 'bottom', currentY is the bottom of the character line.
+        // Subtracting fontSize places the cursor's top near the character's top.
+        const cursorY = this.currentY - this.fontSize;
 
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.currentX, cursorY, 2, this.fontSize);
+        // Draw the cursor rectangle slightly narrower than 2px for a finer look.
+        // Keep the height as fontSize for now, can be adjusted if needed.
+        ctx.fillRect(this.currentX, cursorY, 1.5, this.fontSize);
     }
 
     update() {
