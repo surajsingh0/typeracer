@@ -291,6 +291,21 @@ export default class GameState {
                 carX + carWidth + 5,
                 carY + carHeight / 2
             );
+
+            // Draw WPM and Accuracy below the label
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; // Slightly transparent white
+            const statsFontSize = Math.max(8, carHeight * 0.35); // Slightly smaller font
+            ctx.font = `${statsFontSize}px system-ui`;
+            const accuracyText = participant.accuracy !== undefined ? `${participant.accuracy.toFixed(0)}%` : 'N/A';
+            const statsText = `${participant.wpm || 0} WPM | ${accuracyText}`;
+            const labelMetrics = ctx.measureText(playerLabel); // Measure the label width if needed for alignment, though not strictly needed here
+            const statsY = carY + carHeight / 2 + statsFontSize * 1.2; // Position below the label's baseline
+
+            ctx.fillText(
+                statsText,
+                carX + carWidth + 5, // Align with the label start
+                statsY
+            );
         });
 
         ctx.restore();
