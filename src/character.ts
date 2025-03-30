@@ -57,37 +57,59 @@ export const createCharactersFromText = (
     const characters: Character[] = [];
     const words = text.split(" ");
 
+    // Calculate lines first
     const linesInfo = calculateLines(ctx, words, maxLineWidth, charSpacing);
     const totalHeight = linesInfo.length * lineHeight;
-    const raceTrackHeight = cssHeight * 0.15;
-    const startY = raceTrackHeight + lineHeight;
 
-    let currentX = horizontalPadding;
+    // Calculate vertical positioning
+    const raceTrackHeight = cssHeight * 0.15;
+    const raceTrackMargin = 30; // Match the track top margin
+    const totalTrackSpace = raceTrackHeight + raceTrackMargin;
+    const verticalPadding = cssHeight * 0.05; // 5% padding after track
+    const startY = totalTrackSpace + verticalPadding;
+
+    // For each line, calculate its width to center it
     let currentY = startY;
 
     for (const line of linesInfo) {
-        currentX = horizontalPadding;
+        // Calculate total line width including spaces
+        let lineWidth = 0;
         const wordsInLine = line.split(' ');
-        for(const word of wordsInLine) {
-             for (let j = 0; j < word.length; j++) {
-                 const char = word[j];
-                 const charWidth = ctx.measureText(char).width;
-                 const character = new Character(
-                     ctx,
-                     char,
-                     currentX,
-                     currentY,
-                     charWidth
-                 );
-                 characters.push(character);
-                 currentX += charWidth + charSpacing;
-             }
-             if (word !== wordsInLine[wordsInLine.length - 1]) {
+        for (let i = 0; i < wordsInLine.length; i++) {
+            const word = wordsInLine[i];
+            for (const char of word) {
+                lineWidth += ctx.measureText(char).width + charSpacing;
+            }
+            if (i < wordsInLine.length - 1) {
+                lineWidth += ctx.measureText(" ").width + charSpacing;
+            }
+        }
+        lineWidth -= charSpacing; // Remove trailing space
+
+        // Center the line
+        let currentX = (cssWidth - lineWidth) / 2;
+
+        // Create characters for the line
+        for (const word of wordsInLine) {
+            for (let j = 0; j < word.length; j++) {
+                const char = word[j];
+                const charWidth = ctx.measureText(char).width;
+                const character = new Character(
+                    ctx,
+                    char,
+                    currentX,
+                    currentY,
+                    charWidth
+                );
+                characters.push(character);
+                currentX += charWidth + charSpacing;
+            }
+            if (word !== wordsInLine[wordsInLine.length - 1]) {
                 const spaceWidth = ctx.measureText(" ").width;
                 const spaceChar = new Character(ctx, " ", currentX, currentY, spaceWidth);
                 characters.push(spaceChar);
                 currentX += spaceWidth + charSpacing;
-             }
+            }
         }
         currentY += lineHeight;
     }
