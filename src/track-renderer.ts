@@ -5,10 +5,13 @@ import TypeRacerMetrics from "./metrics";
 export default class TrackRenderer {
     private canvasManager: CanvasManager;
     private baseFontSize: number;
+    private carPositions: Map<string, number>; // Store current visual X for each car
+    private readonly carSmoothness: number = 0.1; // Adjust for desired smoothness (lower = smoother)
 
     constructor(canvasManager: CanvasManager, baseFontSize: number) {
         this.canvasManager = canvasManager;
         this.baseFontSize = baseFontSize;
+        this.carPositions = new Map<string, number>();
     }
 
     updateFontSize(newSize: number) {
@@ -135,20 +138,41 @@ export default class TrackRenderer {
             }
         }
 
-        // Draw each participant's car on the single track
+        // Clean up car positions for participants who left
+        const currentParticipantIds = new Set(allParticipantsMetrics.map(p => p.id));
+        for (const id of this.carPositions.keys()) {
+            if (!currentParticipantIds.has(id)) {
+                this.carPositions.delete(id);
+            }
+        }
+
+        // Draw each participant's car with smooth movement
         allParticipantsMetrics.forEach((participant, index) => {
+            // Calculate target X based on WPM
             const progress = Math.min(1, (participant.wpm || 0) / maxWpmForTrack);
-            const carX = trackStartX + progress * trackLength;
+            const targetCarX = trackStartX + progress * trackLength;
+
+            // Get current visual X or initialize
+            let currentCarX = this.carPositions.get(participant.id);
+            if (currentCarX === undefined) {
+                currentCarX = targetCarX; // Initialize to target position
+            }
+
+            // Interpolate towards the target position
+            currentCarX += (targetCarX - currentCarX) * this.carSmoothness;
+            this.carPositions.set(participant.id, currentCarX); // Update stored position
+
             const carY = trackY;
 
             const color = CURSOR_COLORS[index % CURSOR_COLORS.length].hex;
-            this.drawCar(carX, carY, carWidth, carHeight, color);
+            // Use currentCarX for drawing
+            this.drawCar(currentCarX, carY, carWidth, carHeight, color);
 
-            // Create stats container
+            // Position stats container relative to the smoothed currentCarX
             const labelFontSize = Math.max(11, carHeight * 0.45);
             const statsFontSize = Math.max(10, carHeight * 0.4);
             const statsContainerPadding = 6;
-            const statsX = carX + carWidth + 5;
+            const statsX = currentCarX + carWidth + 5; // Use currentCarX
             const statsY = carY - statsContainerPadding;
             const playerLabel = participant.isPlayer ? `${participant.playerID} (You)` : participant.playerID;
             const accuracyText = participant.accuracy !== undefined ? `${participant.accuracy.toFixed(0)}%` : 'N/A';
