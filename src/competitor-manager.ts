@@ -7,7 +7,6 @@ import ICompetitor from "./competitor.interface";
 import GameState from "./game-state";
 import Competitor from "./competitor";
 import { WSClient } from "./ws-client";
-import { ServerMessage } from "./message";
 
 export class CompetitorManager implements ICompetitorManager {
     private canvasManager: CanvasManager;
@@ -19,17 +18,6 @@ export class CompetitorManager implements ICompetitorManager {
     constructor(canvasManager: CanvasManager, wsClient: WSClient) {
         this.canvasManager = canvasManager;
         this.wsClient = wsClient;
-
-        this.wsClient.on("message", (message: ServerMessage) => {
-            switch (message.type) {
-                case "join":
-                    this.addCompetitor(message.id, null, null, null);
-                    break;
-                case "leave":
-                    this.removeCompetitor(message.id);
-                    break;
-            }
-        });
     }
 
     initialize(gameState: GameState, characters: Character[]) {
@@ -37,56 +25,48 @@ export class CompetitorManager implements ICompetitorManager {
         this.characters = characters;
     }
 
-    addCompetitor(
-        playerID: string | null,
-        currentIdx: number | null,
-        correctChrsCnt: number | null,
-        wpm: number | null
-    ) {
-        if (this.competitors.length === 10) {
+    addCompetitor(id: string, displayID?: string): void {
+        if (!this.gameState || !this.characters) {
+            console.error("CompetitorManager not initialized!");
             return;
         }
 
-        const newCursor = defaultCursor(
+        const uniqueID = id;
+        const competitorDisplayID =
+            displayID || `P_${uniqueID.substring(0, 6)}`;
+
+        if (this.competitors.some((c) => c.getID() === uniqueID)) {
+            return;
+        }
+
+        const competitorCursor = defaultCursor(
             this.canvasManager,
             FONT_SIZE,
-            CURSOR_COLORS[this.competitors.length].hex
+            CURSOR_COLORS[this.competitors.length % CURSOR_COLORS.length].hex
         );
 
         const competitor = new Competitor(
             this.wsClient,
-            playerID ?? "",
-            this.competitors.length,
+            competitorDisplayID,
+            uniqueID,
             this.gameState,
-            newCursor,
+            competitorCursor,
             this.characters,
-            currentIdx ?? 0,
-            correctChrsCnt ?? 0,
-            wpm ?? 0
+            0,
+            0,
+            0
         );
         this.competitors.push(competitor);
+        console.log(
+            `CompetitorManager added competitor instance: ${competitorDisplayID} (ID: ${uniqueID})`
+        );
     }
 
-    private removeCompetitor(playerID: string) {
-        if (!playerID) {
-            console.warn("Attempted to remove competitor with empty ID");
-            return;
-        }
-
-        const index = this.competitors.findIndex(
-            (competitor) => competitor.getPlayerID() === playerID
-        );
-
+    removeCompetitor(id: string): void {
+        const index = this.competitors.findIndex((c) => c.getID() === id);
         if (index !== -1) {
-            console.log(`Removing competitor with ID: ${playerID}`);
-            this.gameState.removeCompetitorMetric(
-                this.competitors[index].getID()
-            );
+            console.log(`CompetitorManager removing instance with ID: ${id}`);
             this.competitors.splice(index, 1);
-        } else {
-            console.warn(
-                `Couldn't find competitor with ID: ${playerID} to remove`
-            );
         }
     }
 

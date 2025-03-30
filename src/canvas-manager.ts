@@ -2,34 +2,53 @@ export default class CanvasManager {
     readonly canvas: HTMLCanvasElement;
     readonly ctx: CanvasRenderingContext2D;
     readonly devicePixelRatio: number;
+    private resizeCallback: (() => void) | null = null;
 
     constructor(canvasElement: HTMLCanvasElement) {
         this.canvas = canvasElement;
         this.ctx = this.canvas.getContext("2d")!;
         this.devicePixelRatio = window.devicePixelRatio || 1;
 
+        this.handleResize = this.handleResize.bind(this);
+        window.addEventListener('resize', this.handleResize);
+
         this.resize();
     }
 
-    private resize() {
-        // Set actual canvas buffer size
+    setResizeCallback(callback: () => void) {
+        this.resizeCallback = callback;
+    }
+
+    private calculateSize() {
         this.canvas.width = window.innerWidth * this.devicePixelRatio;
         this.canvas.height = window.innerHeight * this.devicePixelRatio;
 
-        // Set displayed CSS size
         this.canvas.style.width = `${window.innerWidth}px`;
         this.canvas.style.height = `${window.innerHeight}px`;
 
-        // Scale context for crisp rendering
         this.ctx.scale(this.devicePixelRatio, this.devicePixelRatio);
     }
 
-    // Convert CSS pixels to canvas pixels
+    private handleResize() {
+        this.calculateSize();
+
+        if (this.resizeCallback) {
+            this.resizeCallback();
+        }
+    }
+
+    clear() {
+        this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
+    }
+
+    private resize() {
+        this.calculateSize();
+    }
+
     cssToCanvasPixels(value: number): number {
         return value * this.devicePixelRatio;
     }
 
-    // Get dimensions in CSS pixels
     get cssWidth(): number {
         return window.innerWidth;
     }
@@ -38,12 +57,15 @@ export default class CanvasManager {
         return window.innerHeight;
     }
 
-    // Get center positions in CSS pixels
     get centerX(): number {
         return this.cssWidth / 2;
     }
 
     get centerY(): number {
         return this.cssHeight / 2;
+    }
+
+    destroy() {
+        window.removeEventListener('resize', this.handleResize);
     }
 }

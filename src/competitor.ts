@@ -5,10 +5,11 @@ import { calculateAccuracy } from "./utils";
 import { WSClient } from "./ws-client";
 import { ServerMessage } from "./message";
 import ICompetitor from "./competitor.interface";
+import TypeRacerMetrics from "./metrics";
 
 export default class Competitor implements ICompetitor {
     private playerID: string;
-    private id: number;
+    private id: string;
     private gameState: GameState;
     private cursor: Cursor;
     private currentIndex: number;
@@ -23,7 +24,7 @@ export default class Competitor implements ICompetitor {
     constructor(
         wsClient: WSClient,
         playerID: string,
-        id: number,
+        id: string,
         gameState: GameState,
         cursor: Cursor,
         characters: Character[],
@@ -39,28 +40,33 @@ export default class Competitor implements ICompetitor {
         this.characters = characters;
         this.currentIndex = currentIndex;
         this.correctChrsCnt = correctChrsCnt;
-        (this.wpm = wpm),
-            (this.gameState.competitorMetric = {
-                id: id,
-                playerID: playerID,
-                wpm: this.wpm,
-                accuracy: this.accuracy,
-            });
+        this.wpm = wpm;
+
+        const initialMetrics: TypeRacerMetrics = {
+            id: this.id,
+            playerID: this.playerID,
+            wpm: this.wpm,
+            accuracy: this.accuracy,
+        };
+        this.gameState.updateCompetitorMetric(initialMetrics);
 
         this.wsClient.on("message", (message: ServerMessage) => {
             switch (message.type) {
                 case "update":
-                    if (message.id === this.playerID) {
+                    if (message.id === this.id) {
                         this.currentIndex = message.currentIdx;
                         this.correctChrsCnt = message.correctChrsCnt;
                         this.wpm = message.wpm;
+                        if (message.accuracy !== undefined) {
+                            this.accuracy = message.accuracy;
+                        }
                     }
                     break;
             }
         });
     }
 
-    getID() {
+    getID(): string {
         return this.id;
     }
 

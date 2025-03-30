@@ -3,11 +3,24 @@ import { createCharactersFromText } from "./character";
 import { defaultCursor } from "./cursor";
 import GameState from "./game-state";
 import CanvasManager from "./canvas-manager";
-import { FONT_FAMILY, FONT_SIZE, PADDING, TEXT } from "./constants";
+import { FONT_FAMILY, FONT_SIZE, TEXT } from "./constants";
 import { WSClient } from "./ws-client";
 import { CompetitorManager } from "./competitor-manager";
-import { PlayerInfo, ServerMessage } from "./message";
+import { PlayerInfo } from "./message";
 import { generateUsername } from "./utils";
+import Character from "./character";
+import Cursor from "./cursor";
+
+function calculateFontSize(
+    canvasMgr: CanvasManager,
+    minSize = 12,
+    maxSize = 32,
+    targetCharsPerLine = 60
+): number {
+    const targetWidth = canvasMgr.cssWidth * 0.8;
+    let calculatedSize = targetWidth / targetCharsPerLine / 0.6;
+    return Math.max(minSize, Math.min(maxSize, Math.round(calculatedSize)));
+}
 
 export default class App {
     private canvasManager: CanvasManager;
@@ -15,10 +28,11 @@ export default class App {
     private typeRacer?: TypeRacer;
     private animationFrameId?: number;
     private wsClient?: WSClient;
+    private currentFontSize: number = FONT_SIZE;
+    private currentText: string = "";
 
     constructor(canvasElement: HTMLCanvasElement) {
         this.canvasManager = new CanvasManager(canvasElement);
-
         this.initialize();
     }
 
@@ -53,6 +67,9 @@ export default class App {
                 Math.random().toString(36).slice(2, 11) + "_" + data?.index;
         }
 
+        // Store fetched text
+        this.currentText = paragraphData.paragraph || TEXT;
+
         const url = new URL(window.location.href);
         url.searchParams.set("room", roomID as string);
         window.history.pushState({}, "", url.toString());
@@ -66,18 +83,19 @@ export default class App {
         const playerID = generateUsername();
 
         this.wsClient.on("open", () => {
-            console.log("Connected to server");
+            console.log(`Connected to server. Player Display ID: ${playerID}`);
             this.wsClient?.send({
                 id: playerID,
+                type: "update",
                 currentIdx: 0,
                 correctChrsCnt: 0,
                 wpm: 0,
+                playerID: playerID,
             } as PlayerInfo);
         });
 
-        const characters = this.createCharacters(
-            paragraphData.paragraph || TEXT
-        );
+        this.currentFontSize = calculateFontSize(this.canvasManager);
+        const characters = this.createCharacters(this.currentText);
         const cursor = this.createCursor();
 
         this.typeRacer = new TypeRacer(
@@ -90,35 +108,27 @@ export default class App {
             playerID
         );
 
-        this.wsClient.on("message", (message: ServerMessage) => {
-            switch (message.type) {
-                case "state":
-                    message.players?.forEach((player) => {
-                        this.typeRacer?.addCompetitor(
-                            player.id,
-                            player.currentIdx,
-                            player.correctChrsCnt,
-                            player.wpm
-                        );
-                    });
-            }
+        this.canvasManager.setResizeCallback(() => {
+            console.log("Resize detected, recalculating layout...");
+            this.currentFontSize = calculateFontSize(this.canvasManager);
+            const newCharacters = this.createCharacters(this.currentText);
+            this.gameState?.updateFontSizes();
+            this.typeRacer?.handleResize();
+            this.typeRacer?.updateCharacters(newCharacters);
         });
     }
 
-    private createCharacters(text: string) {
+    private createCharacters(text: string): Character[] {
         return createCharactersFromText(
             this.canvasManager,
             text,
-            FONT_SIZE,
-            FONT_FAMILY,
-            this.canvasManager.cssWidth,
-            this.canvasManager.cssHeight,
-            PADDING
+            this.currentFontSize,
+            FONT_FAMILY
         );
     }
 
-    private createCursor() {
-        return defaultCursor(this.canvasManager, FONT_SIZE);
+    private createCursor(): Cursor {
+        return defaultCursor(this.canvasManager, this.currentFontSize);
     }
 
     private gameLoop = () => {

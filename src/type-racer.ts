@@ -5,7 +5,8 @@ import GameState from "./game-state";
 import { calculateWPM, calculateElapsedTime, calculateAccuracy } from "./utils";
 import ICompetitorManager from "./competitor-manager.interface";
 import { WSClient } from "./ws-client";
-import { PlayerInfo } from "./message";
+import { PlayerInfo, ServerMessage } from "./message";
+import TypeRacerMetrics from "./metrics";
 
 export default class TypeRacer {
     private canvasManager: CanvasManager;
@@ -29,6 +30,8 @@ export default class TypeRacer {
 
     private wsClient: WSClient;
     private playerID: string;
+    private clientID: string;
+    private statsFontSize = 16;
 
     constructor(
         canvasManager: CanvasManager,
@@ -37,7 +40,7 @@ export default class TypeRacer {
         myCursor: Cursor,
         competitorManager: ICompetitorManager,
         wsClient: WSClient,
-        playerID: string
+        playerDisplayName: string
     ) {
         this.canvasManager = canvasManager;
         this.gameState = gameState;
@@ -51,15 +54,76 @@ export default class TypeRacer {
         this.competitorManager.initialize(gameState, characters);
 
         this.wsClient = wsClient;
-        this.playerID = playerID;
+        this.playerID = playerDisplayName;
+        this.clientID = `temp_${Math.random().toString(36).substring(2, 9)}`;
+
+        this.gameState.registerPlayer(this.clientID, this.playerID);
+
+        this.wsClient.on("message", (message: ServerMessage) => {
+            switch (message.type) {
+                case "state":
+                    message.players?.forEach((player: PlayerInfo) => {
+                        if (player.id !== this.clientID) {
+                            const competitorMetrics: TypeRacerMetrics = {
+                                id: player.id,
+                                playerID:
+                                    player.playerID ||
+                                    `P_${player.id.substring(0, 4)}`,
+                                wpm: player.wpm,
+                                accuracy: player.accuracy || 0,
+                            };
+                            this.gameState.updateCompetitorMetric(
+                                competitorMetrics
+                            );
+                        }
+                    });
+                    break;
+                case "assign_id":
+                    if (message.id && this.clientID !== message.id) {
+                        console.log(
+                            `Received assigned Client ID: ${message.id}`
+                        );
+                        this.gameState.removeParticipantMetric(this.clientID);
+                        this.clientID = message.id;
+                        this.gameState.registerPlayer(
+                            this.clientID,
+                            this.playerID
+                        );
+                    }
+                    break;
+                case "update":
+                    if (message.id && message.id !== this.clientID) {
+                        const updateMetrics: TypeRacerMetrics = {
+                            id: message.id,
+                            playerID:
+                                message.playerID ||
+                                `P_${message.id.substring(0, 4)}`,
+                            wpm: message.wpm,
+                            accuracy: message.accuracy || 0,
+                        };
+                        this.gameState.updateCompetitorMetric(updateMetrics);
+                    }
+                    break;
+                case "leave":
+                    if (message.id && message.id !== this.clientID) {
+                        this.gameState.removeParticipantMetric(message.id);
+                        this.competitorManager.removeCompetitor(message.id);
+                    }
+                    break;
+            }
+        });
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
         document.addEventListener("keydown", this.handleKeyDown);
 
         this.updateInterval = setInterval(() => {
             this.updateStats();
+            this.gameState.updateWpm(this.clientID, this.wpm);
+            this.gameState.updateAccuracy(this.clientID, this.accuracy);
             this.sendUpdates();
         }, 1000);
+
+        this.updateStatsLayout();
     }
 
     private updateStats() {
@@ -127,11 +191,12 @@ export default class TypeRacer {
         this.lastSentTime = now;
 
         this.wsClient.send({
+            id: this.clientID,
             type: "update",
             currentIdx: this.curCharIdx,
             correctChrsCnt: this.correctChrsCnt,
             wpm: this.wpm,
-        } as Omit<PlayerInfo, "id">);
+        } as PlayerInfo);
     }
 
     draw() {
@@ -142,26 +207,6 @@ export default class TypeRacer {
         });
         this.myCursor.draw();
         this.competitorManager.draw();
-
-        ctx.fillStyle = "rgb(152, 152, 152)";
-        ctx.fillText(`${this.playerID}`, 40, 40, 200);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.fillText(`WPM: ${this.wpm}`, 40, 75, 200);
-        ctx.fillText(`Acc: ${this.accuracy}%`, 40, 105, 200);
-    }
-
-    addCompetitor(
-        playerID: string | null,
-        currentIdx: number | null,
-        correctChrsCnt: number | null,
-        wpm: number | null
-    ) {
-        this.competitorManager.addCompetitor(
-            playerID,
-            currentIdx,
-            correctChrsCnt,
-            wpm
-        );
     }
 
     update() {
@@ -180,13 +225,10 @@ export default class TypeRacer {
 
     private end() {
         this.updateStats();
+        this.gameState.updateWpm(this.clientID, this.wpm);
+        this.gameState.updateAccuracy(this.clientID, this.accuracy);
         this.sendUpdates(false);
         this.gameState.isOver = true;
-        this.gameState.metrics = {
-            playerID: this.playerID,
-            wpm: this.wpm,
-            accuracy: this.accuracy,
-        };
         this.isStarted = false;
         this.cleanup();
     }
@@ -194,5 +236,34 @@ export default class TypeRacer {
     private cleanup() {
         document.removeEventListener("keypress", this.handleKeyDown);
         clearInterval(this.updateInterval);
+    }
+
+    updateStatsLayout() {
+        const width = this.canvasManager.cssWidth;
+        if (width < 600) {
+            this.statsFontSize = 12;
+        } else if (width < 900) {
+            this.statsFontSize = 14;
+        } else {
+            this.statsFontSize = 16;
+        }
+    }
+
+    handleResize() {
+        this.updateStatsLayout();
+        console.log("TypeRacer handling resize (Stats layout updated)");
+    }
+
+    updateCharacters(newCharacters: Character[]) {
+        this.characters = newCharacters;
+        this.curCharIdx = 0;
+        this.correctChrsCnt = 0;
+        this.isStarted = false;
+        this.wpm = 0;
+        this.accuracy = 0;
+        this.startTime = Date.now();
+        this.myCursor.reset();
+        this.myCursor.disappear();
+        this.sendUpdates(false);
     }
 }

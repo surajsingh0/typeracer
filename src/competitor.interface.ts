@@ -1,7 +1,7 @@
 export default interface ICompetitor {
     setPlayerID(id: string): void;
     setCurrentIdx(idx: number): void;
-    getID(): number;
+    getID(): string;
     getPlayerID(): string;
     isFinished(): boolean;
     update(deltaTime: number): void;

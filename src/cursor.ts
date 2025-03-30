@@ -102,6 +102,18 @@ export default class Cursor {
 
         requestAnimationFrame(flicker);
     }
+
+    get y(): number {
+        return this.targetY ?? 0;
+    }
+
+    reset() {
+        this.targetX = undefined;
+        this.targetY = undefined;
+        this.currentX = undefined;
+        this.currentY = undefined;
+        this.isVisible = false;
+    }
 }
 
 export const defaultCursor = (

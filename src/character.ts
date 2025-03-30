@@ -34,7 +34,7 @@ export default class Character {
                 this.ctx.fillStyle = "red";
                 break;
         }
-        this.ctx.fillText(this.char, this.x, this.y, this.width);
+        this.ctx.fillText(this.char, this.x, this.y);
     }
 }
 
@@ -43,117 +43,90 @@ export const createCharactersFromText = (
     text: string,
     fontSize: number,
     fontFamily: string,
-    canvasWidth: number,
-    canvasHeight: number,
-    padding: number = 20,
-    charSpacing: number = 2.5,
-    lineHeight: number = fontSize * 1.2
 ): Character[] => {
-    const { ctx } = canvasManager;
+    const { ctx, cssWidth, cssHeight } = canvasManager;
+    const padding = cssWidth * 0.1;
+    const maxLineWidth = cssWidth - 2 * padding;
+    const charSpacing = fontSize * 0.15;
+    const lineHeightMultiplier = 1.4;
+    const lineHeight = fontSize * lineHeightMultiplier;
 
     ctx.font = `${fontSize}px ${fontFamily}`;
+    ctx.textBaseline = "bottom";
 
     const characters: Character[] = [];
     const words = text.split(" ");
 
-    const totalHeight = calculateTextBlockHeight(
-        ctx,
-        words,
-        canvasWidth,
-        padding,
-        lineHeight
-    );
-
-    // Ensure starting Y position is at least 165px
+    const linesInfo = calculateLines(ctx, words, maxLineWidth, charSpacing);
+    const totalHeight = linesInfo.length * lineHeight;
     const startY = Math.max(
-        (canvasHeight - totalHeight) / 2, // Centered position
-        165
+        cssHeight * 0.2,
+        (cssHeight - totalHeight) / 2
     );
 
     let currentX = padding;
     let currentY = startY;
 
-    for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        const wordWidth = ctx.measureText(word).width;
-
-        if (wordWidth > canvasWidth - 2 * padding) {
-            console.warn(
-                `Word "${word}" is too long to fit within the canvas width.`
-            );
-            continue;
+    for (const line of linesInfo) {
+        currentX = padding;
+        const wordsInLine = line.split(' ');
+        for(const word of wordsInLine) {
+             for (let j = 0; j < word.length; j++) {
+                 const char = word[j];
+                 const charWidth = ctx.measureText(char).width;
+                 const character = new Character(
+                     ctx,
+                     char,
+                     currentX,
+                     currentY,
+                     charWidth
+                 );
+                 characters.push(character);
+                 currentX += charWidth + charSpacing;
+             }
+             if (word !== wordsInLine[wordsInLine.length - 1]) {
+                const spaceWidth = ctx.measureText(" ").width;
+                const spaceChar = new Character(ctx, " ", currentX, currentY, spaceWidth);
+                characters.push(spaceChar);
+                currentX += spaceWidth + charSpacing;
+             }
         }
-
-        if (currentX + wordWidth > canvasWidth - padding) {
-            currentX = padding;
-            currentY += lineHeight;
-        }
-
-        for (let j = 0; j < word.length; j++) {
-            const char = word[j];
-            const charWidth = ctx.measureText(char).width;
-
-            const character = new Character(
-                ctx,
-                char,
-                currentX,
-                currentY,
-                charWidth
-            );
-            characters.push(character);
-
-            currentX += charWidth + charSpacing;
-        }
-
-        if (i < words.length - 1) {
-            const spaceWidth = ctx.measureText(" ").width;
-            const spaceChar = new Character(
-                ctx,
-                " ",
-                currentX,
-                currentY,
-                spaceWidth
-            );
-            characters.push(spaceChar);
-            currentX += spaceWidth + charSpacing;
-        }
+        currentY += lineHeight;
     }
 
     return characters;
 };
 
-const calculateTextBlockHeight = (
+const calculateLines = (
     ctx: CanvasRenderingContext2D,
     words: string[],
-    canvasWidth: number,
-    padding: number,
-    lineHeight: number
-): number => {
-    let currentX = padding;
-    let totalHeight = lineHeight;
+    maxLineWidth: number,
+    charSpacing: number
+): string[] => {
+    const lines: string[] = [];
+    let currentLine = "";
+    let currentX = 0;
 
     for (let i = 0; i < words.length; i++) {
         const word = words[i];
-        const wordWidth = ctx.measureText(word).width;
-
-        if (wordWidth > canvasWidth - 2 * padding) {
-            console.warn(
-                `Word "${word}" is too long to fit within the canvas width.`
-            );
-            continue;
+        let wordWidth = 0;
+        for(const char of word) {
+            wordWidth += ctx.measureText(char).width + charSpacing;
         }
+        wordWidth -= charSpacing;
 
-        if (currentX + wordWidth > canvasWidth - padding) {
-            currentX = padding;
-            totalHeight += lineHeight;
-        }
+        const spaceWidth = currentLine === "" ? 0 : ctx.measureText(" ").width + charSpacing;
 
-        currentX += wordWidth;
-        if (i < words.length - 1) {
-            const spaceWidth = ctx.measureText(" ").width;
-            currentX += spaceWidth;
+        if (currentX + spaceWidth + wordWidth > maxLineWidth && currentLine !== "") {
+            lines.push(currentLine);
+            currentLine = word;
+            currentX = wordWidth;
+        } else {
+            currentLine += (currentLine === "" ? "" : " ") + word;
+            currentX += spaceWidth + wordWidth;
         }
     }
+    lines.push(currentLine);
 
-    return totalHeight;
+    return lines;
 };

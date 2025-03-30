@@ -1,5 +1,5 @@
 export default interface TypeRacerMetrics {
-    id?: number;
+    id: string;
     playerID: string;
     wpm: number;
     accuracy: number;
