@@ -64,7 +64,11 @@ export const createCharactersFromText = (
         lineHeight
     );
 
-    const startY = (canvasHeight - totalHeight) / 2;
+    // Ensure starting Y position is at least 165px
+    const startY = Math.max(
+        (canvasHeight - totalHeight) / 2, // Centered position
+        165
+    );
 
     let currentX = padding;
     let currentY = startY;
