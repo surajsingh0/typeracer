@@ -1,6 +1,5 @@
 import CanvasManager from "./canvas-manager";
 import { CURSOR_COLORS } from "./constants";
-import { defaultCursor } from "./cursor";
 import TypeRacerMetrics from "./metrics";
 
 export default class TrackRenderer {
