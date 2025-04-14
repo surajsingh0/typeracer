@@ -10,7 +10,7 @@ export default class CanvasManager {
         this.devicePixelRatio = window.devicePixelRatio || 1;
 
         this.handleResize = this.handleResize.bind(this);
-        window.addEventListener('resize', this.handleResize);
+        window.addEventListener("resize", this.handleResize);
 
         this.resize();
     }
@@ -66,6 +66,6 @@ export default class CanvasManager {
     }
 
     destroy() {
-        window.removeEventListener('resize', this.handleResize);
+        window.removeEventListener("resize", this.handleResize);
     }
 }

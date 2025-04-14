@@ -32,17 +32,17 @@ export class CompetitorManager implements ICompetitorManager {
         }
 
         const uniqueID = id;
-        const competitorDisplayID =
-            displayID || `P_${uniqueID.substring(0, 6)}`;
+        const competitorDisplayID = displayID || uniqueID;
 
         if (this.competitors.some((c) => c.getID() === uniqueID)) {
             return;
         }
 
+        const colorIndex = this.competitors.length % CURSOR_COLORS.length;
         const competitorCursor = defaultCursor(
             this.canvasManager,
             FONT_SIZE,
-            CURSOR_COLORS[this.competitors.length % CURSOR_COLORS.length].hex
+            CURSOR_COLORS[colorIndex].hex
         );
 
         const competitor = new Competitor(

@@ -76,7 +76,9 @@ export default class App {
 
         this.gameState = new GameState(this.canvasManager, roomID!);
         this.wsClient = new WSClient({
-            url: `ws://localhost:8080/ws?room=${encodeURIComponent(roomID!)}`,
+            url: `${import.meta.env.VITE_WS_URL}?room=${encodeURIComponent(
+                roomID!
+            )}`,
         });
         this.wsClient.connect();
 

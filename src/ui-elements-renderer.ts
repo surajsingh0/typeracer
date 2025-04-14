@@ -69,4 +69,4 @@ export default class UIElementsRenderer {
 
         ctx.restore();
     }
-} 
+}

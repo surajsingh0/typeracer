@@ -31,7 +31,7 @@ export default class TypeRacer {
     private wsClient: WSClient;
     private playerID: string;
     private clientID: string;
-    private statsFontSize = 16;
+    // private statsFontSize = 16;
 
     constructor(
         canvasManager: CanvasManager,
@@ -64,11 +64,13 @@ export default class TypeRacer {
                 case "state":
                     message.players?.forEach((player: PlayerInfo) => {
                         if (player.id !== this.clientID) {
+                            this.competitorManager.addCompetitor(
+                                player.id,
+                                player.playerID
+                            );
                             const competitorMetrics: TypeRacerMetrics = {
                                 id: player.id,
-                                playerID:
-                                    player.playerID ||
-                                    `P_${player.id.substring(0, 4)}`,
+                                playerID: player.playerID || player.id,
                                 wpm: player.wpm,
                                 accuracy: player.accuracy || 0,
                             };
@@ -93,11 +95,14 @@ export default class TypeRacer {
                     break;
                 case "update":
                     if (message.id && message.id !== this.clientID) {
+                        this.competitorManager.addCompetitor(
+                            message.id,
+                            message.playerID
+                        );
+
                         const updateMetrics: TypeRacerMetrics = {
                             id: message.id,
-                            playerID:
-                                message.playerID ||
-                                `P_${message.id.substring(0, 4)}`,
+                            playerID: message.playerID || message.id,
                             wpm: message.wpm,
                             accuracy: message.accuracy || 0,
                         };
@@ -200,7 +205,7 @@ export default class TypeRacer {
     }
 
     draw() {
-        const { ctx } = this.canvasManager;
+        // const { ctx } = this.canvasManager;
 
         this.characters.forEach((char) => {
             char.draw();
@@ -241,11 +246,11 @@ export default class TypeRacer {
     updateStatsLayout() {
         const width = this.canvasManager.cssWidth;
         if (width < 600) {
-            this.statsFontSize = 12;
+            // this.statsFontSize = 12;
         } else if (width < 900) {
-            this.statsFontSize = 14;
+            // this.statsFontSize = 14;
         } else {
-            this.statsFontSize = 16;
+            // this.statsFontSize = 16;
         }
     }
 
@@ -255,15 +260,47 @@ export default class TypeRacer {
     }
 
     updateCharacters(newCharacters: Character[]) {
+        const wasStarted = this.isStarted;
+        const oldCharacters = this.characters;
+        const oldCurCharIdx = this.curCharIdx;
+        const oldCorrectChrsCnt = this.correctChrsCnt;
+        const oldStartTime = this.startTime;
+
         this.characters = newCharacters;
-        this.curCharIdx = 0;
-        this.correctChrsCnt = 0;
-        this.isStarted = false;
-        this.wpm = 0;
-        this.accuracy = 0;
-        this.startTime = Date.now();
-        this.myCursor.reset();
-        this.myCursor.disappear();
+
+        if (wasStarted) {
+            for (
+                let i = 0;
+                i < oldCurCharIdx && i < this.characters.length;
+                i++
+            ) {
+                this.characters[i].currentState = oldCharacters[i].currentState;
+            }
+
+            this.curCharIdx = oldCurCharIdx;
+            this.correctChrsCnt = oldCorrectChrsCnt;
+            this.isStarted = wasStarted;
+            this.startTime = oldStartTime;
+
+            if (
+                this.curCharIdx > 0 &&
+                this.curCharIdx < this.characters.length
+            ) {
+                this.myCursor.move(this.characters[this.curCharIdx - 1]);
+            } else if (this.curCharIdx === 0) {
+                this.myCursor.disappear();
+            }
+        } else {
+            this.curCharIdx = 0;
+            this.correctChrsCnt = 0;
+            this.isStarted = false;
+            this.wpm = 0;
+            this.accuracy = 0;
+            this.startTime = Date.now();
+            this.myCursor.reset();
+            this.myCursor.disappear();
+        }
+
         this.sendUpdates(false);
     }
 }

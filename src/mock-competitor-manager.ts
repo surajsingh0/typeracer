@@ -1,16 +1,18 @@
 import Character from "./character";
 import { defaultCursor } from "./cursor";
-import ICompetitorManager from "./competitor-manager.interface";
+// import ICompetitorManager from "./competitor-manager.interface";
 import CanvasManager from "./canvas-manager";
 import { CURSOR_COLORS, FONT_SIZE } from "./constants";
 import MockCompetitor from "./mock-competitor";
-import ICompetitor from "./competitor.interface";
+// import ICompetitor from "./competitor.interface";
 import GameState from "./game-state";
 
-export class MockCompetitorManager implements ICompetitorManager {
+// TODO: fix
+export class MockCompetitorManager /*implements ICompetitorManager*/ {
     private canvasManager: CanvasManager;
     private gameState!: GameState;
-    private competitors: ICompetitor[] = [];
+    // private competitors: ICompetitor[] = [];
+    private competitors: MockCompetitor[] = [];
     private characters!: Character[];
 
     constructor(canvasManager: CanvasManager) {

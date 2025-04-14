@@ -31,7 +31,7 @@ export default class GameOverOverlayRenderer {
     }
 
     draw(
-        allParticipantsMetrics: (TypeRacerMetrics & { isPlayer?: boolean })[],
+        allParticipantsMetrics: (TypeRacerMetrics & { isPlayer?: boolean })[]
     ) {
         const { ctx, cssWidth, cssHeight, centerX, centerY } =
             this.canvasManager;
@@ -134,4 +134,4 @@ export default class GameOverOverlayRenderer {
 
         ctx.restore();
     }
-} 
+}

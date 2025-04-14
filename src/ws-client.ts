@@ -86,7 +86,7 @@ export class WSClient {
             }
         };
 
-        this.ws.onclose = (event) => {
+        this.ws.onclose = () => {
             this.cleanup();
             this.emit("close");
 

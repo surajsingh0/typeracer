@@ -1,10 +1,11 @@
 import Character from "./character";
-import ICompetitor from "./competitor.interface";
+// import ICompetitor from "./competitor.interface";
 import Cursor from "./cursor";
 import GameState from "./game-state";
-import { calculateElapsedTime, calculateWPM } from "./utils";
+import { calculateElapsedTime, calculateWPM, calculateAccuracy } from "./utils";
 
-export default class MockCompetitor implements ICompetitor {
+// TODO: fix
+export default class MockCompetitor /*implements ICompetitor*/ {
     private playerID: string;
     private id: number;
     private gameState: GameState;
@@ -41,11 +42,12 @@ export default class MockCompetitor implements ICompetitor {
         this.interval = interval;
 
         this.startTime = Date.now();
-        this.gameState.competitorMetric = {
-            id: this.id,
-            wpm: 0,
-            accuracy: 0,
-        };
+        // TODO: fix
+        // this.gameState.competitorMetric = {
+        //     id: this.id,
+        //     wpm: 0,
+        //     accuracy: 0,
+        // };
     }
 
     getID() {
@@ -95,7 +97,12 @@ export default class MockCompetitor implements ICompetitor {
                 this.currentIndex,
                 calculateElapsedTime(this.startTime)
             );
-            this.gameState.updateWpm(this.id, this.wpm);
+            this.gameState.updateWpm(this.id.toString(), this.wpm);
+            const accuracy = calculateAccuracy(
+                this.correctChrsCnt,
+                this.currentIndex
+            );
+            this.gameState.updateAccuracy(this.id.toString(), accuracy);
         }
     }
 }

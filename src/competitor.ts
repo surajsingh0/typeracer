@@ -90,6 +90,7 @@ export default class Competitor implements ICompetitor {
         this.cursor.draw();
     }
 
+    // @ts-ignore
     update(deltaTime: number) {
         if (this.finished) return;
 

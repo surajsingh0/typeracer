@@ -1,6 +1,5 @@
 import TypeRacerMetrics from "./metrics";
 import CanvasManager from "./canvas-manager";
-import { CURSOR_COLORS } from "./constants";
 import TrackRenderer from "./track-renderer";
 import GameOverOverlayRenderer from "./game-over-overlay-renderer";
 import UIElementsRenderer from "./ui-elements-renderer";
@@ -13,10 +12,14 @@ export default class GameState {
     })[] = [];
     private roomID: string;
     private isHoveringButton = false;
-    private buttonPosition: { x: number; y: number; width: number; height: number } = { x: 0, y: 0, width: 0, height: 0 };
+    private buttonPosition: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    } = { x: 0, y: 0, width: 0, height: 0 };
     private baseFontSize = 14;
     private titleFontSize = 22;
-    private competitorFontSize = 14;
     private resultsFontSize = 16;
     private winnerFontSize = 18;
     private playerClientId: string | null = null;
@@ -29,14 +32,20 @@ export default class GameState {
         this.canvasManager = canvasManager;
         this.roomID = roomID;
 
-        this.trackRenderer = new TrackRenderer(this.canvasManager, this.baseFontSize);
+        this.trackRenderer = new TrackRenderer(
+            this.canvasManager,
+            this.baseFontSize
+        );
         this.gameOverOverlayRenderer = new GameOverOverlayRenderer(
             this.canvasManager,
             this.titleFontSize,
             this.resultsFontSize,
             this.winnerFontSize
         );
-        this.uiElementsRenderer = new UIElementsRenderer(this.canvasManager, this.baseFontSize);
+        this.uiElementsRenderer = new UIElementsRenderer(
+            this.canvasManager,
+            this.baseFontSize
+        );
 
         this.updateFontSizes();
         this.setupCanvasInteractions();
@@ -113,19 +122,16 @@ export default class GameState {
         if (width < 600) {
             this.baseFontSize = 12;
             this.titleFontSize = 18;
-            this.competitorFontSize = 12;
             this.resultsFontSize = 14;
             this.winnerFontSize = 16;
         } else if (width < 900) {
             this.baseFontSize = 14;
             this.titleFontSize = 22;
-            this.competitorFontSize = 14;
             this.resultsFontSize = 16;
             this.winnerFontSize = 18;
         } else {
             this.baseFontSize = 16;
             this.titleFontSize = 24;
-            this.competitorFontSize = 16;
             this.resultsFontSize = 18;
             this.winnerFontSize = 20;
         }
@@ -170,7 +176,7 @@ export default class GameState {
             this.isHoveringButton = false;
         });
 
-        canvas.addEventListener("click", (e) => {
+        canvas.addEventListener("click", () => {
             if (this.isHoveringButton) {
                 const inviteUrl = `${window.location.origin}?room=${this.roomID}`;
                 navigator.clipboard.writeText(inviteUrl);

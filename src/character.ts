@@ -42,7 +42,7 @@ export const createCharactersFromText = (
     canvasManager: CanvasManager,
     text: string,
     fontSize: number,
-    fontFamily: string,
+    fontFamily: string
 ): Character[] => {
     const { ctx, cssWidth, cssHeight } = canvasManager;
     const horizontalPadding = cssWidth * 0.05;
@@ -59,7 +59,7 @@ export const createCharactersFromText = (
 
     // Calculate lines first
     const linesInfo = calculateLines(ctx, words, maxLineWidth, charSpacing);
-    const totalHeight = linesInfo.length * lineHeight;
+    // const totalHeight = linesInfo.length * lineHeight;
 
     // Calculate vertical positioning
     const raceTrackHeight = cssHeight * 0.15;
@@ -74,7 +74,7 @@ export const createCharactersFromText = (
     for (const line of linesInfo) {
         // Calculate total line width including spaces
         let lineWidth = 0;
-        const wordsInLine = line.split(' ');
+        const wordsInLine = line.split(" ");
         for (let i = 0; i < wordsInLine.length; i++) {
             const word = wordsInLine[i];
             for (const char of word) {
@@ -106,7 +106,13 @@ export const createCharactersFromText = (
             }
             if (word !== wordsInLine[wordsInLine.length - 1]) {
                 const spaceWidth = ctx.measureText(" ").width;
-                const spaceChar = new Character(ctx, " ", currentX, currentY, spaceWidth);
+                const spaceChar = new Character(
+                    ctx,
+                    " ",
+                    currentX,
+                    currentY,
+                    spaceWidth
+                );
                 characters.push(spaceChar);
                 currentX += spaceWidth + charSpacing;
             }
@@ -130,14 +136,18 @@ const calculateLines = (
     for (let i = 0; i < words.length; i++) {
         const word = words[i];
         let wordWidth = 0;
-        for(const char of word) {
+        for (const char of word) {
             wordWidth += ctx.measureText(char).width + charSpacing;
         }
         wordWidth -= charSpacing;
 
-        const spaceWidth = currentLine === "" ? 0 : ctx.measureText(" ").width + charSpacing;
+        const spaceWidth =
+            currentLine === "" ? 0 : ctx.measureText(" ").width + charSpacing;
 
-        if (currentX + spaceWidth + wordWidth > maxLineWidth && currentLine !== "") {
+        if (
+            currentX + spaceWidth + wordWidth > maxLineWidth &&
+            currentLine !== ""
+        ) {
             lines.push(currentLine);
             currentLine = word;
             currentX = wordWidth;

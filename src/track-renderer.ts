@@ -19,7 +19,7 @@ export default class TrackRenderer {
     }
 
     draw(
-        allParticipantsMetrics: (TypeRacerMetrics & { isPlayer?: boolean })[],
+        allParticipantsMetrics: (TypeRacerMetrics & { isPlayer?: boolean })[]
     ) {
         const { ctx, cssWidth, cssHeight } = this.canvasManager;
         ctx.save();
@@ -44,7 +44,13 @@ export default class TrackRenderer {
         // Draw background for player count
         ctx.fillStyle = "rgba(30, 30, 30, 0.8)";
         ctx.beginPath();
-        ctx.roundRect(playerCountX - padding, playerCountY - padding, playerCountWidth, playerCountHeight + padding * 2, 4);
+        ctx.roundRect(
+            playerCountX - padding,
+            playerCountY - padding,
+            playerCountWidth,
+            playerCountHeight + padding * 2,
+            4
+        );
         ctx.fill();
 
         // Draw player count text
@@ -72,18 +78,35 @@ export default class TrackRenderer {
         // Draw track shadow
         ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
         ctx.beginPath();
-        ctx.roundRect(trackStartX + 2, trackBackgroundY + 2, trackEndX - trackStartX, trackBackgroundHeight, 5);
+        ctx.roundRect(
+            trackStartX + 2,
+            trackBackgroundY + 2,
+            trackEndX - trackStartX,
+            trackBackgroundHeight,
+            5
+        );
         ctx.fill();
 
         // Draw main track background with gradient
-        const trackGradient = ctx.createLinearGradient(0, trackBackgroundY, 0, trackBackgroundY + trackBackgroundHeight);
+        const trackGradient = ctx.createLinearGradient(
+            0,
+            trackBackgroundY,
+            0,
+            trackBackgroundY + trackBackgroundHeight
+        );
         trackGradient.addColorStop(0, "rgba(70, 70, 70, 0.8)");
         trackGradient.addColorStop(0.5, "rgba(50, 50, 50, 0.8)");
         trackGradient.addColorStop(1, "rgba(30, 30, 30, 0.8)");
 
         ctx.fillStyle = trackGradient;
         ctx.beginPath();
-        ctx.roundRect(trackStartX, trackBackgroundY, trackEndX - trackStartX, trackBackgroundHeight, 5);
+        ctx.roundRect(
+            trackStartX,
+            trackBackgroundY,
+            trackEndX - trackStartX,
+            trackBackgroundHeight,
+            5
+        );
         ctx.fill();
 
         // Draw lane markers
@@ -98,7 +121,12 @@ export default class TrackRenderer {
         ctx.setLineDash([]);
 
         // Draw track borders with gradient
-        const borderGradient = ctx.createLinearGradient(0, trackBackgroundY, 0, trackBackgroundY + trackBackgroundHeight);
+        const borderGradient = ctx.createLinearGradient(
+            0,
+            trackBackgroundY,
+            0,
+            trackBackgroundY + trackBackgroundHeight
+        );
         borderGradient.addColorStop(0, "rgba(255, 255, 255, 0.7)");
         borderGradient.addColorStop(0.5, "rgba(255, 255, 255, 0.5)");
         borderGradient.addColorStop(1, "rgba(255, 255, 255, 0.7)");
@@ -139,7 +167,9 @@ export default class TrackRenderer {
         }
 
         // Clean up car positions for participants who left
-        const currentParticipantIds = new Set(allParticipantsMetrics.map(p => p.id));
+        const currentParticipantIds = new Set(
+            allParticipantsMetrics.map((p) => p.id)
+        );
         for (const id of this.carPositions.keys()) {
             if (!currentParticipantIds.has(id)) {
                 this.carPositions.delete(id);
@@ -149,7 +179,10 @@ export default class TrackRenderer {
         // Draw each participant's car with smooth movement
         allParticipantsMetrics.forEach((participant, index) => {
             // Calculate target X based on WPM
-            const progress = Math.min(1, (participant.wpm || 0) / maxWpmForTrack);
+            const progress = Math.min(
+                1,
+                (participant.wpm || 0) / maxWpmForTrack
+            );
             const targetCarX = trackStartX + progress * trackLength;
 
             // Get current visual X or initialize
@@ -174,16 +207,23 @@ export default class TrackRenderer {
             const statsContainerPadding = 6;
             const statsX = currentCarX + carWidth + 5; // Use currentCarX
             const statsY = carY - statsContainerPadding;
-            const playerLabel = participant.isPlayer ? `${participant.playerID} (You)` : participant.playerID;
-            const accuracyText = participant.accuracy !== undefined ? `${participant.accuracy.toFixed(0)}%` : 'N/A';
+            const playerLabel = participant.isPlayer
+                ? `${participant.playerID} (You)`
+                : participant.playerID;
+            const accuracyText =
+                participant.accuracy !== undefined
+                    ? `${participant.accuracy.toFixed(0)}%`
+                    : "N/A";
             const statsText = `${participant.wpm || 0} WPM | ${accuracyText}`;
 
             ctx.font = `${labelFontSize}px system-ui`;
             const labelWidth = ctx.measureText(playerLabel).width;
             ctx.font = `${statsFontSize}px system-ui`;
             const statsWidth = ctx.measureText(statsText).width;
-            const containerWidth = Math.max(labelWidth, statsWidth) + statsContainerPadding * 2;
-            const containerHeight = labelFontSize + statsFontSize + statsContainerPadding * 3;
+            const containerWidth =
+                Math.max(labelWidth, statsWidth) + statsContainerPadding * 2;
+            const containerHeight =
+                labelFontSize + statsFontSize + statsContainerPadding * 3;
 
             // Draw stats background
             ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
@@ -196,12 +236,20 @@ export default class TrackRenderer {
             ctx.font = `${labelFontSize}px system-ui`;
             ctx.textAlign = "left";
             ctx.textBaseline = "top";
-            ctx.fillText(playerLabel, statsX + statsContainerPadding, statsY + statsContainerPadding);
+            ctx.fillText(
+                playerLabel,
+                statsX + statsContainerPadding,
+                statsY + statsContainerPadding
+            );
 
             // Draw Stats
             ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
             ctx.font = `${statsFontSize}px system-ui`;
-            ctx.fillText(statsText, statsX + statsContainerPadding, statsY + labelFontSize + statsContainerPadding * 1.5);
+            ctx.fillText(
+                statsText,
+                statsX + statsContainerPadding,
+                statsY + labelFontSize + statsContainerPadding * 1.5
+            );
         });
 
         ctx.restore();
@@ -225,11 +273,22 @@ export default class TrackRenderer {
         // Draw car shadow
         ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
         ctx.beginPath();
-        ctx.roundRect(x + xOffset + 2, y + yOffset + 2, bodyWidth, bodyHeight, 4);
+        ctx.roundRect(
+            x + xOffset + 2,
+            y + yOffset + 2,
+            bodyWidth,
+            bodyHeight,
+            4
+        );
         ctx.fill();
 
         // Draw car body with gradient
-        const gradient = ctx.createLinearGradient(x + xOffset, y + yOffset, x + xOffset, y + yOffset + bodyHeight);
+        const gradient = ctx.createLinearGradient(
+            x + xOffset,
+            y + yOffset,
+            x + xOffset,
+            y + yOffset + bodyHeight
+        );
         const brighterColor = this.adjustColor(color, 20);
         const darkerColor = this.adjustColor(color, -20);
         gradient.addColorStop(0, brighterColor);
@@ -247,7 +306,13 @@ export default class TrackRenderer {
         const windshieldX = x + xOffset + bodyWidth * 0.6;
         const windshieldY = y + yOffset + (bodyHeight - windshieldHeight) / 2;
         ctx.beginPath();
-        ctx.roundRect(windshieldX, windshieldY, windshieldWidth, windshieldHeight, 2);
+        ctx.roundRect(
+            windshieldX,
+            windshieldY,
+            windshieldWidth,
+            windshieldHeight,
+            2
+        );
         ctx.fill();
 
         // Draw wheels with shadow
@@ -308,7 +373,7 @@ export default class TrackRenderer {
 
     private adjustColor(color: string, amount: number): string {
         // Remove the '#' if present
-        const hex = color.replace('#', '');
+        const hex = color.replace("#", "");
 
         // Convert to RGB
         const r = parseInt(hex.substring(0, 2), 16);
@@ -316,7 +381,8 @@ export default class TrackRenderer {
         const b = parseInt(hex.substring(4, 6), 16);
 
         // Adjust each component
-        const adjustComponent = (c: number) => Math.min(255, Math.max(0, c + amount));
+        const adjustComponent = (c: number) =>
+            Math.min(255, Math.max(0, c + amount));
         const newR = adjustComponent(r);
         const newG = adjustComponent(g);
         const newB = adjustComponent(b);
@@ -324,9 +390,9 @@ export default class TrackRenderer {
         // Convert back to hex
         const toHex = (c: number) => {
             const hex = c.toString(16);
-            return hex.length === 1 ? '0' + hex : hex;
+            return hex.length === 1 ? "0" + hex : hex;
         };
 
         return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
     }
-} 
+}
