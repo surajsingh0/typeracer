@@ -1,5 +1,6 @@
 import CanvasManager from "./canvas-manager";
 import { CURSOR_COLORS } from "./constants";
+import { defaultCursor } from "./cursor";
 import TypeRacerMetrics from "./metrics";
 
 export default class TrackRenderer {
@@ -197,7 +198,9 @@ export default class TrackRenderer {
 
             const carY = trackY;
 
-            const color = CURSOR_COLORS[index % CURSOR_COLORS.length].hex;
+            const color = participant.isPlayer
+                ? "#B1B1B1" // default cursor hex equivalent color
+                : CURSOR_COLORS[(index - 1) % CURSOR_COLORS.length].hex;
             // Use currentCarX for drawing
             this.drawCar(currentCarX, carY, carWidth, carHeight, color);
 

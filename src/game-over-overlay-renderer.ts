@@ -41,9 +41,12 @@ export default class GameOverOverlayRenderer {
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 0, cssWidth, cssHeight);
 
-        const sortedParticipants = [...allParticipantsMetrics].sort(
-            (a, b) => (b?.wpm || 0) - (a?.wpm || 0)
-        );
+        const sortedParticipants = [...allParticipantsMetrics]
+            .map((participant, index) => ({
+                ...participant,
+                originalIndex: index,
+            }))
+            .sort((a, b) => (b?.wpm || 0) - (a?.wpm || 0));
         const maxWpm = sortedParticipants[0]?.wpm || 0;
 
         const currentTitleFontSize = this.titleFontSize;
@@ -88,21 +91,15 @@ export default class GameOverOverlayRenderer {
 
             const position = `#${index + 1}`;
 
-            if (isWinner) {
-                ctx.font = `bold ${currentWinnerFontSize}px system-ui`;
-                ctx.fillStyle = "#FFD700";
-            } else {
-                const participantIndex = allParticipantsMetrics.findIndex(
-                    (p) => p.id === participant.id
-                );
-                ctx.fillStyle =
-                    participantIndex !== -1
-                        ? CURSOR_COLORS[participantIndex % CURSOR_COLORS.length]
-                              .hex
-                        : isPlayer
-                        ? "white"
-                        : "gray";
-            }
+            ctx.font = `${isWinner ? "bold" : ""} ${
+                isWinner ? currentWinnerFontSize : currentBaseFontSize
+            }px system-ui`;
+
+            ctx.fillStyle = isPlayer
+                ? "#B1B1B1" // default cursor hex equivalent color
+                : CURSOR_COLORS[
+                      (participant.originalIndex - 1) % CURSOR_COLORS.length
+                  ].hex;
 
             const accuracyText =
                 participant?.accuracy !== undefined
